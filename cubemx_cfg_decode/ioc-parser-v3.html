@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDU-PHOENIX配置初始化器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36BFFA',
+                        dark: '#1D2939',
+                        light: '#F9FAFB',
+                        success: '#039855',
+                        warning: '#F79009',
+                        danger: '#D92D20',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                transition: all 0.3s;
+            }
+            .card-hover:hover {
+                box-shadow: 0 10px 20px rgba(22,93,255,0.15), 0 2px 4px rgba(0,0,0,0.07);
+                transform: translateY(-4px);
+            }
+            .section-transition {
+                max-height: 0;
+                overflow: hidden;
+                transition-property: all;
+                transition-duration: 500ms;
+                transition-timing-function: ease-in-out;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 6px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background-color: rgba(156, 163, 175, 0.5);
+                border-radius: 3px;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                <i class="fa fa-microchip text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-primary">HDU-PHOENIX配置初始化器</h1>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">适配6.x全版本</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-moon-o text-gray-600"></i>
+                </button>
+                <button id="help-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-question-circle text-gray-600"></i>
+                </button>
+                <button id="about-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-info-circle text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- 介绍部分 -->
+        <section class="mb-10 text-center">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-4 text-dark">解析STM32CubeMX配置文件</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto text-lg">支持CubeMX 6.x全版本，精准识别STM32H7/F4/F1等系列芯片，自动提取外设、时钟、GPIO等配置</p>
+        </section>
+
+        <!-- 文件上传区域 -->
+        <section class="mb-12">
+            <div id="upload-container" class="border-2 border-dashed border-primary/50 rounded-xl p-8 text-center bg-white shadow-sm hover:shadow-md transition-shadow">
+                <i class="fa fa-file-code-o text-5xl text-primary/70 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">拖放IOC文件到此处</h3>
+                <p class="text-gray-500 mb-6">或点击选择文件上传</p>
+                <label class="inline-block bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg cursor-pointer transition-colors shadow-md hover:shadow-lg">
+                    <i class="fa fa-upload mr-2"></i>选择IOC文件
+                    <input type="file" id="file-input" accept=".ioc" class="hidden">
+                </label>
+                <p class="text-gray-400 text-sm mt-4">支持格式: .ioc | 最新适配: CubeMX 6.15.0 | 支持芯片: STM32全系列</p>
+            </div>
+
+            <!-- 上传的文件信息 -->
+            <div id="file-info" class="hidden mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center">
+                    <i class="fa fa-file-text-o text-primary mr-3 text-xl"></i>
+                    <div>
+                        <h4 id="file-name" class="font-medium text-lg"></h4>
+                        <p id="file-size" class="text-sm text-gray-500"></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="file-version-hint" class="text-xs bg-gray-100 px-3 py-1 rounded-full hidden"></span>
+                    <button id="remove-file" class="text-gray-400 hover:text-danger p-2 transition-colors">
+                        <i class="fa fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 解析按钮 -->
+        <section class="text-center mb-12">
+            <button id="parse-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-8 rounded-lg cursor-pointer transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0" disabled>
+                <i class="fa fa-cogs mr-2"></i>解析文件
+            </button>
+        </section>
+
+        <!-- 加载状态 -->
+        <section id="loading-section" class="hidden text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <p class="mt-4 text-gray-600">正在解析IOC文件，请稍候...</p>
+        </section>
+
+        <!-- 错误信息 -->
+        <section id="error-section" class="hidden mb-12">
+            <div class="bg-red-50 border border-red-200 text-danger p-4 rounded-lg">
+                <div class="flex items-start">
+                    <i class="fa fa-exclamation-circle mt-1 mr-3 text-xl"></i>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-1">解析错误</h3>
+                        <p id="error-message" class="text-red-700"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 解析结果 -->
+        <section id="results-section" class="hidden">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <!-- 微控制器基本信息 -->
+                <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-secondary/5">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-microchip text-primary mr-3"></i>微控制器信息
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow-sm card-hover">
+                            <p class="text-sm text-gray-500 mb-1">型号</p>
+                            <p id="mcu-model" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm card-hover">
+                            <p class="text-sm text-gray-500 mb-1">封装</p>
+                            <p id="mcu-package" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm card-hover">
+                            <p class="text-sm text-gray-500 mb-1">CubeMX版本</p>
+                            <p id="cubemx-version" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm card-hover">
+                            <p class="text-sm text-gray-500 mb-1">固件包版本</p>
+                            <p id="firmware-version" class="font-semibold"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时钟配置 -->
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex justify-between items-center cursor-pointer section-toggle" data-target="clock-section">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-clock-o text-primary mr-3"></i>时钟配置
+                        </h2>
+                        <i class="fa fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                    </div>
+                    <div id="clock-section" class="section-transition mt-4 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">外部高速时钟 (HSE)</p>
+                                <p id="hse" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">系统时钟 (SYSCLK)</p>
+                                <p id="sysclk" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">CPU时钟 (CortexFreq)</p>
+                                <p id="cpuclk" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">AHB时钟 (HCLK)</p>
+                                <p id="hclk" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">APB1时钟 (APB1Freq)</p>
+                                <p id="pclk1" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                                <p class="text-sm text-gray-500 mb-1">APB2时钟 (APB2Freq)</p>
+                                <p id="pclk2" class="font-semibold"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 外设配置 -->
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex justify-between items-center cursor-pointer section-toggle" data-target="peripherals-section">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-plug text-primary mr-3"></i>外设配置
+                        </h2>
+                        <i class="fa fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                    </div>
+                    <div id="peripherals-section" class="section-transition mt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- SPI外设 -->
+                            <div class="bg-gray-50 p-5 rounded-lg card-hover">
+                                <h3 class="text-lg font-semibold mb-3 flex items-center">
+                                    <i class="fa fa-exchange text-primary mr-2"></i>SPI外设
+                                </h3>
+                                <div id="spi-config" class="space-y-2 text-gray-700">
+                                    <!-- SPI配置动态生成 -->
+                                </div>
+                            </div>
+                            <!-- 串口外设 -->
+                            <div class="bg-gray-50 p-5 rounded-lg card-hover">
+                                <h3 class="text-lg font-semibold mb-3 flex items-center">
+                                    <i class="fa fa-tty text-primary mr-2"></i>串口 (UART/USART)
+                                </h3>
+                                <div id="uart-config" class="space-y-2 text-gray-700">
+                                    <!-- UART配置动态生成 -->
+                                </div>
+                            </div>
+                            <!-- I2C外设 -->
+                            <div class="bg-gray-50 p-5 rounded-lg card-hover">
+                                <h3 class="text-lg font-semibold mb-3 flex items-center">
+                                    <i class="fa fa-arrows-v text-primary mr-2"></i>I2C外设
+                                </h3>
+                                <div id="i2c-config" class="space-y-2 text-gray-700">
+                                    <!-- I2C配置动态生成 -->
+                                </div>
+                            </div>
+                            <!-- CAN/FDCAN外设 -->
+                            <div class="bg-gray-50 p-5 rounded-lg card-hover">
+                                <h3 class="text-lg font-semibold mb-3 flex items-center">
+                                    <i class="fa fa-bus text-primary mr-2"></i>CAN / FDCAN 外设
+                                </h3>
+                                <div id="can-config" class="space-y-2 text-gray-700">
+                                    <!-- CAN配置动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GPIO配置 -->
+                <div class="p-6 border-b border-gray-100">
+                    <div class="flex justify-between items-center cursor-pointer section-toggle" data-target="gpio-section">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-th text-primary mr-3"></i>GPIO配置
+                        </h2>
+                        <i class="fa fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                    </div>
+                    <div id="gpio-section" class="section-transition mt-4">
+                        <div class="overflow-x-auto scrollbar-thin">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 bg-gray-50">
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">引脚</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">功能</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">模式</th>
+                                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">标签/备注</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gpio-config" class="divide-y divide-gray-200">
+                                    <!-- GPIO配置动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 项目配置 -->
+                <div class="p-6">
+                    <div class="flex justify-between items-center cursor-pointer section-toggle" data-target="project-section">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-folder-open text-primary mr-3"></i>项目配置
+                        </h2>
+                        <i class="fa fa-chevron-down text-gray-400 transition-transform duration-300"></i>
+                    </div>
+                    <div id="project-section" class="section-transition mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                            <p class="text-sm text-gray-500 mb-1">项目名称</p>
+                            <p id="project-name" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                            <p class="text-sm text-gray-500 mb-1">工具链</p>
+                            <p id="toolchain" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                            <p class="text-sm text-gray-500 mb-1">堆大小 (Heap)</p>
+                            <p id="heap-size" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg card-hover">
+                            <p class="text-sm text-gray-500 mb-1">栈大小 (Stack)</p>
+                            <p id="stack-size" class="font-semibold"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 新增：底盘和CAN初始化配置生成工具 -->
+        <!-- 直接引入生成工具的HTML结构 -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                <i class="fa fa-cogs text-primary mr-2"></i>底盘和CAN初始化配置生成
+            </h2>
+            <!-- 文件操作区 -->
+            <div class="mb-6 flex flex-wrap gap-4">
+                <div class="flex items-center">
+                    <label for="fileUpload" class="bg-neutral hover:bg-neutral/90 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-200 cursor-pointer">
+                        <i class="fa fa-upload mr-2"></i>加载现有配置
+                    </label>
+                    <input type="file" id="fileUpload" accept=".h" class="hidden" />
+                    <span id="fileNameDisplay" class="ml-3 text-sm text-gray-600"></span>
+                </div>
+                <button id="newFileBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-200">
+                    <i class="fa fa-file-o mr-2"></i>新建配置
+                </button>
+            </div>
+            <!-- 文件信息 -->
+            <div class="mb-8 border-b border-gray-200 pb-6">
+                <h3 class="font-medium text-gray-700 mb-3">文件信息</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="fileName" class="block text-sm font-medium text-gray-600 mb-1">文件名</label>
+                        <input type="text" id="fileName" value="user_configuration"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                        <p class="text-xs text-gray-500 mt-1">不需要包含.h扩展名</p>
+                    </div>
+                    <div>
+                        <label for="guardName" class="block text-sm font-medium text-gray-600 mb-1">头文件保护宏</label>
+                        <input type="text" id="guardName" value="USER_CONFIGURATION_H"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                </div>
+            </div>
+            <!-- 底盘配置部分（替换为radio单选） -->
+            <div class="mb-8 border-b border-gray-200 pb-6">
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">底盘初始化配置选项</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="noChassis" name="chassisType" value="none"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="noChassis" class="font-medium text-gray-800">不启用底盘</label>
+                            <p class="text-sm text-gray-600 mt-1">不定义任何底盘类型宏</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="omniChassis" name="chassisType" value="omni"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="omniChassis" class="font-medium text-gray-800">全向轮底盘</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_OMNI</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="mecanumChassis" name="chassisType" value="mecanum"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="mecanumChassis" class="font-medium text-gray-800">麦克纳姆底盘</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_MECANUM</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="swerveChassis" name="chassisType" value="swerve"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="swerveChassis" class="font-medium text-gray-800">舵轮底盘</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_SWERVE</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="balanceChassis" name="chassisType" value="balance"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="balanceChassis" class="font-medium text-gray-800">平衡底盘</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_BALANCE</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CAN配置部分 -->
+            <div class="mb-6">
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">CAN 初始化配置选项</h3>
+                <div class="space-y-4">
+                    <!-- CAN类型选择 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">CAN类型</label>
+                        <div class="flex gap-2">
+                            <button id="canTypeStandard" class="can-type-btn bg-primary text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
+                                <i class="fa fa-circle-o"></i> 标准CAN
+                            </button>
+                            <button id="canTypeFD" class="can-type-btn bg-gray-100 text-gray-700 rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
+                                <i class="fa fa-circle"></i> FD CAN
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- CAN总线选择 -->
+                    <div id="canBusSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-2">CAN总线</label>
+                        <div class="flex gap-2">
+                            <button id="canBus1" class="can-bus-btn bg-primary text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
+                                CAN1
+                            </button>
+                            <button id="canBus2" class="can-bus-btn bg-gray-100 text-gray-700 rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
+                                CAN2
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- FIFO配置 -->
+                    <div id="fifoConfigSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-2">FIFO配置</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="txFifoSize" class="block text-sm font-medium text-gray-600 mb-1">TX FIFO大小</label>
+                                <input type="number" id="txFifoSize" value="10"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                            <div>
+                                <label for="rxFifoSize" class="block text-sm font-medium text-gray-600 mb-1">RX FIFO大小</label>
+                                <input type="number" id="rxFifoSize" value="10"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 预览区域 -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fa fa-eye text-primary mr-2"></i>预览
+            </h2>
+            <div class="mb-4 flex justify-between items-center">
+                <div class="text-sm text-gray-500" id="previewFileName">user_configuration.h</div>
+                <button id="copyBtn" class="text-primary hover:text-primary/80 text-sm flex items-center transition-colors">
+                    <i class="fa fa-copy mr-1"></i>复制代码
+                </button>
+            </div>
+            <div class="relative">
+                <pre id="codePreview" class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto max-h-96 text-sm font-mono"></pre>
+                <div id="copyNotification" class="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-md text-sm opacity-0 transition-opacity duration-300">
+                    已复制!
+                </div>
+                <div id="fifoWarning" class="absolute top-3 left-3 bg-yellow-500 text-white px-3 py-1 rounded-md text-sm opacity-0 transition-opacity duration-300">
+                    每个CAN总线至少选择一个FIFO!
+                </div>
+                <div id="loadSuccessNotification" class="absolute top-3 left-3 bg-green-500 text-white px-3 py-1 rounded-md text-sm opacity-0 transition-opacity duration-300">
+                    配置文件加载成功!
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 帮助模态框 -->
+    <div id="help-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4 scrollbar-thin">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">使用帮助</h3>
+                    <button id="close-help" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <h4 class="font-semibold text-lg mb-3">什么是IOC文件？</h4>
+                <p class="text-gray-600 mb-4">IOC文件是STM32CubeMX软件生成的配置文件，包含了微控制器的所有硬件配置信息，如引脚分配、外设配置、时钟设置等。</p>
+                
+                <h4 class="font-semibold text-lg mb-3">如何使用此工具？</h4>
+                <ol class="list-decimal pl-5 text-gray-600 mb-4 space-y-2">
+                    <li>点击"选择IOC文件"按钮，或直接将IOC文件拖放到上传区域</li>
+                    <li>上传完成后，点击"解析文件"按钮</li>
+                    <li>查看解析结果，点击各部分标题可展开/折叠内容</li>
+                </ol>
+                
+                <h4 class="font-semibold text-lg mb-3">支持的信息</h4>
+                <p class="text-gray-600">此工具可以解析并展示以下信息：</p>
+                <ul class="list-disc pl-5 text-gray-600 space-y-1">
+                    <li>微控制器型号、封装、CubeMX版本和固件包信息</li>
+                    <li>时钟树配置，包括各种时钟频率</li>
+                    <li>已配置的外设及其参数（SPI、DMA、NVIC等）</li>
+                    <li>引脚分配和功能配置，包含标签和模式信息</li>
+                    <li>项目基本信息和工具链配置</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于模态框 -->
+    <div id="about-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto m-4">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">关于初始化器</h3>
+                    <button id="close-about" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <i class="fa fa-microchip text-primary text-5xl mb-4"></i>
+                    <h4 class="text-xl font-bold">HDU-PHOENIX配置初始化器</h4>
+                    <p class="text-gray-500 mt-2">专业解析STM32CubeMX配置文件</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h5 class="font-semibold">版本信息</h5>
+                        <p class="text-gray-600 text-sm">当前版本: 3.0</p>
+                        <p class="text-gray-600 text-sm">适配CubeMX版本: 6.x全系列</p>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-semibold">联系方式</h5>
+                        <p class="text-gray-600 text-sm">开发者: Your Name</p>
+                        <p class="text-gray-600 text-sm">邮箱: yourname@example.com</p>
+                    </div>
+                    
+                    <div>
+                        <h5 class="font-semibold">致谢</h5>
+                        <p class="text-gray-600 text-sm">特别感谢 STM32CubeMX 团队提供的强大工具</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素引用
+        const fileInput = document.getElementById('file-input');
+        const uploadContainer = document.getElementById('upload-container');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const fileVersionHint = document.getElementById('file-version-hint');
+        const removeFile = document.getElementById('remove-file');
+        const parseBtn = document.getElementById('parse-btn');
+        const loadingSection = document.getElementById('loading-section');
+        const errorSection = document.getElementById('error-section');
+        const errorMessage = document.getElementById('error-message');
+        const resultsSection = document.getElementById('results-section');
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelp = document.getElementById('close-help');
+        const aboutBtn = document.getElementById('about-btn');
+        const aboutModal = document.getElementById('about-modal');
+        const closeAbout = document.getElementById('close-about');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // 存储上传的文件
+        let uploadedFile = null;
+        
+        // 文件上传处理
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // 拖放功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            uploadContainer.classList.add('border-primary');
+            uploadContainer.classList.add('bg-primary/5');
+        }
+        
+        function unhighlight() {
+            uploadContainer.classList.remove('border-primary');
+            uploadContainer.classList.remove('bg-primary/5');
+        }
+        
+        uploadContainer.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+        
+        function handleFile(file) {
+            // 检查文件类型
+            if (!file.name.endsWith('.ioc')) {
+                showError('请上传扩展名为.ioc的文件');
+                return;
+            }
+            
+            uploadedFile = file;
+            
+            // 显示文件信息
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('hidden');
+            
+            // 尝试预览文件内容以检测CubeMX版本
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const versionMatch = content.match(/MxCube\.Version=([\d.]+)/);
+                if (versionMatch) {
+                    fileVersionHint.textContent = `CubeMX v${versionMatch[1]}`;
+                    fileVersionHint.classList.remove('hidden');
+                }
+            };
+            reader.readAsText(file.slice(0, 1024)); // 只读取前1KB内容
+            
+            // 启用解析按钮
+            parseBtn.disabled = false;
+            
+            // 隐藏错误信息
+            errorSection.classList.add('hidden');
+        }
+        
+        // 移除文件
+        removeFile.addEventListener('click', () => {
+            uploadedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            fileVersionHint.classList.add('hidden');
+            parseBtn.disabled = true;
+            resultsSection.classList.add('hidden');
+        });
+        
+        // 解析文件
+        parseBtn.addEventListener('click', () => {
+            if (!uploadedFile) return;
+            
+            // 显示加载状态
+            loadingSection.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const parsedData = parseIocFile(content);
+                    displayResults(parsedData);
+                    
+                    // 隐藏加载状态，显示结果
+                    loadingSection.classList.add('hidden');
+                    resultsSection.classList.remove('hidden');
+                    
+                    // 自动展开第一个 section
+                    document.querySelector('.section-toggle').click();
+                    
+                    // 滚动到结果部分
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                } catch (error) {
+                    loadingSection.classList.add('hidden');
+                    showError(`解析失败: ${error.message}`);
+                    console.error('解析错误:', error);
+                }
+            };
+            
+            reader.onerror = function() {
+                loadingSection.classList.add('hidden');
+                showError('无法读取文件，请尝试其他文件');
+            };
+            
+            reader.readAsText(uploadedFile);
+        });
+        
+        // 显示错误信息
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorSection.classList.remove('hidden');
+        }
+        
+        // 解析IOC文件内容 - 针对CubeMX 6.x版本优化
+        function parseIocFile(content) {
+            const lines = content.split('\n');
+            const result = {
+                mcu: {
+                    model: '',
+                    package: '',
+                    cubemxVersion: '',
+                    firmwareVersion: ''
+                },
+                clock: {
+                    hse: '',
+                    sysclk: '',
+                    cpuclk: '',
+                    hclk: '',
+                    pclk1: '',
+                    pclk2: ''
+                },
+                peripherals: {
+                    spi: [],
+                    uart: [],
+                    i2c: [],
+                    can: [],
+                    dma: [],
+                    nvic: [],
+                    rcc: {}
+                },
+                gpio: [],
+                project: {
+                    name: '',
+                    toolchain: '',
+                    heapSize: '',
+                    stackSize: ''
+                }
+            };
+            
+            // 正则表达式模式 - 适配CubeMX 6.x新格式
+            const patterns = {
+                mcuModel: /^Mcu\.Name\s*=\s*(.+)$/,
+                mcuPackage: /^Mcu\.Package\s*=\s*(.+)$/,
+                cubemxVersion: /^MxCube\.Version\s*=\s*(.+)$/,
+                firmwareVersion: /^ProjectManager\.FirmwarePackage\s*=\s*[^_]+_v(.+)$/,
+                
+                // 时钟配置
+                hse: /^RCC\.HSE_VALUE\s*=\s*(\d+)/,
+                sysclk: /^RCC\.SYSCLKFreq_VALUE\s*=\s*(\d+)/,
+                cpuclk: /^RCC\.CortexFreq_Value\s*=\s*(\d+)/,
+                hclk: /^RCC\.HCLKFreq_Value\s*=\s*(\d+)/,
+                pclk1: /^RCC\.APB1Freq_Value\s*=\s*(\d+)/,
+                pclk2: /^RCC\.APB2Freq_Value\s*=\s*(\d+)/,
+                
+                // SPI配置
+                spiMode: /^(SPI\d+)\.Mode\s*=\s*(.+)$/,
+                spiBaudRate: /^(SPI\d+)\.BaudRatePrescaler\s*=\s*(.+)$/,
+                spiClockPhase: /^(SPI\d+)\.CLKPhase\s*=\s*(.+)$/,
+                spiClockPolarity: /^(SPI\d+)\.CLKPolarity\s*=\s*(.+)$/,
+                spiDataSize: /^(SPI\d+)\.DataSize\s*=\s*(.+)$/,
+                spiDirection: /^(SPI\d+)\.Direction\s*=\s*(.+)$/,
+                
+                // DMA配置
+                dmaRequest: /^Dma\.Request(\d+)\s*=\s*(.+)$/,
+                dmaInstance: /^Dma\.([^.]+)\.\d+\.Instance\s*=\s*(.+)$/,
+                dmaDirection: /^Dma\.([^.]+)\.\d+\.Direction\s*=\s*(.+)$/,
+                dmaPriority: /^Dma\.([^.]+)\.\d+\.Priority\s*=\s*(.+)$/,
+                
+                // NVIC配置
+                nvicIrq: /^NVIC\.([^.]+IRQn)\s*=\s*(.+)$/,
+                
+                // RCC配置
+                rccSysclkSource: /^RCC\.SYSCLKSource\s*=\s*(.+)$/,
+                rccPllConfig: /^RCC\.DIV(N|M|P)\d+\s*=\s*(\d+)/,
+                
+                // GPIO配置
+                gpioPin: /^([A-Z]+\d+[^\.]*)\.Signal\s*=\s*(.+)$/,
+                gpioMode: /^([A-Z]+\d+[^\.]*)\.Mode\s*=\s*(.+)$/,
+                gpioLabel: /^([A-Z]+\d+[^\.]*)\.GPIO_Label\s*=\s*(.+)$/,
+                
+                // 项目配置
+                projectName: /^ProjectManager\.ProjectName\s*=\s*(.+)$/,
+                toolchain: /^ProjectManager\.CompilerLinker\s*=\s*(.+)$/,
+                heapSize: /^ProjectManager\.HeapSize\s*=\s*(.+)$/,
+                stackSize: /^ProjectManager\.StackSize\s*=\s*(.+)$/
+            };
+            
+            // 临时存储外设配置
+            const spiTemp = {};
+            const dmaTemp = {};
+            const uartTemp = {};
+            const canTemp = {};
+            const i2cTemp = {};
+            
+            // 解析每一行
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                
+                // 微控制器信息
+                const mcuModelMatch = line.match(patterns.mcuModel);
+                if (mcuModelMatch) {
+                    result.mcu.model = mcuModelMatch[1];
+                }
+                
+                const mcuPackageMatch = line.match(patterns.mcuPackage);
+                if (mcuPackageMatch) {
+                    result.mcu.package = mcuPackageMatch[1];
+                }
+                
+                const cubemxVersionMatch = line.match(patterns.cubemxVersion);
+                if (cubemxVersionMatch) {
+                    result.mcu.cubemxVersion = cubemxVersionMatch[1];
+                }
+                
+                const firmwareVersionMatch = line.match(patterns.firmwareVersion);
+                if (firmwareVersionMatch) {
+                    result.mcu.firmwareVersion = firmwareVersionMatch[1];
+                }
+                
+                // 时钟配置
+                const hseMatch = line.match(patterns.hse);
+                if (hseMatch) {
+                    result.clock.hse = `${hseMatch[1]} Hz`;
+                }
+                
+                const sysclkMatch = line.match(patterns.sysclk);
+                if (sysclkMatch) {
+                    result.clock.sysclk = `${formatFrequency(sysclkMatch[1])}`;
+                }
+                
+                const cpuclkMatch = line.match(patterns.cpuclk);
+                if (cpuclkMatch) {
+                    result.clock.cpuclk = `${formatFrequency(cpuclkMatch[1])}`;
+                }
+                
+                const hclkMatch = line.match(patterns.hclk);
+                if (hclkMatch) {
+                    result.clock.hclk = `${formatFrequency(hclkMatch[1])}`;
+                }
+                
+                const pclk1Match = line.match(patterns.pclk1);
+                if (pclk1Match) {
+                    result.clock.pclk1 = `${formatFrequency(pclk1Match[1])}`;
+                }
+                
+                const pclk2Match = line.match(patterns.pclk2);
+                if (pclk2Match) {
+                    result.clock.pclk2 = `${formatFrequency(pclk2Match[1])}`;
+                }
+                
+                // SPI配置
+                const spiModeMatch = line.match(patterns.spiMode);
+                if (spiModeMatch) {
+                    const spiName = spiModeMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].mode = spiModeMatch[2];
+                }
+                
+                const spiBaudRateMatch = line.match(patterns.spiBaudRate);
+                if (spiBaudRateMatch) {
+                    const spiName = spiBaudRateMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].baudRate = spiBaudRateMatch[2].replace('SPI_BAUDRATEPRESCALER_', '分频: ');
+                }
+                
+                const spiClockPhaseMatch = line.match(patterns.spiClockPhase);
+                if (spiClockPhaseMatch) {
+                    const spiName = spiClockPhaseMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].clockPhase = spiClockPhaseMatch[2].replace('SPI_PHASE_', '');
+                }
+                
+                const spiClockPolarityMatch = line.match(patterns.spiClockPolarity);
+                if (spiClockPolarityMatch) {
+                    const spiName = spiClockPolarityMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].clockPolarity = spiClockPolarityMatch[2].replace('SPI_POLARITY_', '');
+                }
+                
+                const spiDataSizeMatch = line.match(patterns.spiDataSize);
+                if (spiDataSizeMatch) {
+                    const spiName = spiDataSizeMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].dataSize = spiDataSizeMatch[2].replace('SPI_DATASIZE_', '');
+                }
+                
+                const spiDirectionMatch = line.match(patterns.spiDirection);
+                if (spiDirectionMatch) {
+                    const spiName = spiDirectionMatch[1];
+                    if (!spiTemp[spiName]) {
+                        spiTemp[spiName] = {};
+                    }
+                    spiTemp[spiName].direction = spiDirectionMatch[2].replace('SPI_DIRECTION_', '');
+                }
+                
+                // 串口解析
+                const uartMatch = line.match(/^((?:USART|UART|LPUART)\d+)\.(\w+)\s*=\s*(.+)$/i);
+                if (uartMatch) {
+                    const uartName = uartMatch[1];
+                    const key = uartMatch[2];
+                    const val = uartMatch[3];
+                    if (!uartTemp[uartName]) uartTemp[uartName] = {};
+                    uartTemp[uartName][key] = val;
+                }
+
+                // CAN/FDCAN解析
+                const canMatch = line.match(/^((?:CAN|FDCAN)\d+)\.(\w+)\s*=\s*(.+)$/i);
+                if (canMatch) {
+                    const canName = canMatch[1];
+                    const key = canMatch[2];
+                    const val = canMatch[3];
+                    if (!canTemp[canName]) canTemp[canName] = {};
+                    canTemp[canName][key] = val;
+                }
+
+                // 新增：CAN/FDCAN波特率解析
+                const canBaudRateMatch = line.match(patterns.canBaudRate);
+                if (canBaudRateMatch) {
+                    const canName = canBaudRateMatch[1];
+                    if (!canTemp[canName]) canTemp[canName] = {};
+                    canTemp[canName]['BaudRate'] = canBaudRateMatch[2];
+                }
+
+                // I2C解析
+                const i2cMatch = line.match(patterns.i2cProperty);
+                if (i2cMatch) {
+                    const i2cName = i2cMatch[1];
+                    const key = i2cMatch[2];
+                    const val = i2cMatch[3];
+                    if (!i2cTemp[i2cMatch]) i2cTemp[i2cMatch] = {};
+                    i2cTemp[i2cMatch][key] = val;
+                }
+
+                // DMA配置
+                const dmaRequestMatch = line.match(patterns.dmaRequest);
+                if (dmaRequestMatch) {
+                    const dmaName = dmaRequestMatch[2];
+                    if (!dmaTemp[dmaName]) {
+                        dmaTemp[dmaName] = {};
+                    }
+                }
+                
+                const dmaInstanceMatch = line.match(patterns.dmaInstance);
+                if (dmaInstanceMatch) {
+                    const dmaName = dmaInstanceMatch[1];
+                    if (!dmaTemp[dmaName]) {
+                        dmaTemp[dmaName] = {};
+                    }
+                    dmaTemp[dmaName].instance = dmaInstanceMatch[2];
+                }
+                
+                const dmaDirectionMatch = line.match(patterns.dmaDirection);
+                if (dmaDirectionMatch) {
+                    const dmaName = dmaDirectionMatch[1];
+                    if (!dmaTemp[dmaName]) {
+                        dmaTemp[dmaName] = {};
+                    }
+                    dmaTemp[dmaName].direction = dmaDirectionMatch[2].replace('DMA_', '');
+                }
+                
+                const dmaPriorityMatch = line.match(patterns.dmaPriority);
+                if (dmaPriorityMatch) {
+                    const dmaName = dmaPriorityMatch[1];
+                    if (!dmaTemp[dmaName]) {
+                        dmaTemp[dmaName] = {};
+                    }
+                    dmaTemp[dmaName].priority = dmaPriorityMatch[2].replace('DMA_PRIORITY_', '');
+                }
+                
+                // NVIC配置
+                const nvicIrqMatch = line.match(patterns.nvicIrq);
+                if (nvicIrqMatch) {
+                    const irqName = nvicIrqMatch[1];
+                    const irqParams = nvicIrqMatch[2].split(':');
+                    result.peripherals.nvic.push({
+                        name: irqName.replace('_IRQn', ''),
+                        enabled: irqParams[0] === 'true',
+                        priority: irqParams[1]
+                    });
+                }
+                
+                // RCC配置
+                const rccSysclkSourceMatch = line.match(patterns.rccSysclkSource);
+                if (rccSysclkSourceMatch) {
+                    result.peripherals.rcc.sysclkSource = rccSysclkSourceMatch[1].replace('RCC_SYSCLKSOURCE_', '');
+                }
+                
+                const rccPllConfigMatch = line.match(patterns.rccPllConfig);
+                if (rccPllConfigMatch) {
+                    result.peripherals.rcc[`pll${rccPllConfigMatch[1]}`] = rccPllConfigMatch[2];
+                }
+                
+                // GPIO配置
+                const gpioPinMatch = line.match(patterns.gpioPin);
+                if (gpioPinMatch) {
+                    const pinName = gpioPinMatch[1];
+                    // 查找现有引脚配置或创建新的
+                    let gpioEntry = result.gpio.find(g => g.pin === pinName);
+                    if (!gpioEntry) {
+                        gpioEntry = { pin: pinName, function: '', mode: '', label: '' };
+                        result.gpio.push(gpioEntry);
+                    }
+                    gpioEntry.function = gpioPinMatch[2].replace('GPIO_', '');
+                }
+                
+                const gpioModeMatch = line.match(patterns.gpioMode);
+                if (gpioModeMatch) {
+                    const pinName = gpioModeMatch[1];
+                    let gpioEntry = result.gpio.find(g => g.pin === pinName);
+                    if (!gpioEntry) {
+                        gpioEntry = { pin: pinName, function: '', mode: '', label: '' };
+                        result.gpio.push(gpioEntry);
+                    }
+                    gpioEntry.mode = gpioModeMatch[2];
+                }
+                
+                const gpioLabelMatch = line.match(patterns.gpioLabel);
+                if (gpioLabelMatch) {
+                    const pinName = gpioLabelMatch[1];
+                    let gpioEntry = result.gpio.find(g => g.pin === pinName);
+                    if (!gpioEntry) {
+                        gpioEntry = { pin: pinName, function: '', mode: '', label: '' };
+                        result.gpio.push(gpioEntry);
+                    }
+                    gpioEntry.label = gpioLabelMatch[2];
+                }
+                
+                // 项目配置
+                const projectNameMatch = line.match(patterns.projectName);
+                if (projectNameMatch) {
+                    result.project.name = projectNameMatch[1];
+                }
+                
+                const toolchainMatch = line.match(patterns.toolchain);
+                if (toolchainMatch) {
+                    result.project.toolchain = toolchainMatch[1];
+                }
+                
+                const heapSizeMatch = line.match(patterns.heapSize);
+                if (heapSizeMatch) {
+                    result.project.heapSize = heapSizeMatch[1];
+                }
+                
+                const stackSizeMatch = line.match(patterns.stackSize);
+                if (stackSizeMatch) {
+                    result.project.stackSize = stackSizeMatch[1];
+                }
+            });
+            
+            // 将临时存储的SPI配置转换为数组
+            for (const spiName in spiTemp) {
+                result.peripherals.spi.push({
+                    name: spiName,
+                    ...spiTemp[spiName]
+                });
+            }
+            
+            // 将临时存储的UART配置转换为数组
+            for (const uartName in uartTemp) {
+                result.peripherals.uart.push({
+                    name: uartName,
+                    ...uartTemp[uartName]
+                });
+            }
+            
+            // 将临时存储的CAN配置转换为数组
+            for (const canName in canTemp) {
+                result.peripherals.can.push({
+                    name: canName,
+                    ...canTemp[canName]
+                });
+            }
+            
+            // 将临时存储的I2C配置转换为数组
+            for (const i2cName in i2cTemp) {
+                result.peripherals.i2c.push({
+                    name: i2cName,
+                    ...i2cTemp[i2cName]
+                });
+            }
+            
+            // 将临时存储的DMA配置转换为数组
+            for (const dmaName in dmaTemp) {
+                result.peripherals.dma.push({
+                    name: dmaName,
+                    ...dmaTemp[dmaName]
+                });
+            }
+            
+            // 验证是否解析到了基本信息
+            if (!result.mcu.model) {
+                throw new Error('无法识别微控制器型号，请确保上传的是有效的IOC文件（CubeMX 6.x版本生成）');
+            }
+            
+            return result;
+        }
+        
+        // 显示解析结果
+        function displayResults(data) {
+            // 微控制器信息
+            document.getElementById('mcu-model').textContent = data.mcu.model;
+            document.getElementById('mcu-package').textContent = data.mcu.package || '未指定';
+            document.getElementById('cubemx-version').textContent = data.mcu.cubemxVersion || '未指定';
+            document.getElementById('firmware-version').textContent = data.mcu.firmwareVersion || '未指定';
+            
+            // 时钟配置
+            // HSE显示为MHz
+            document.getElementById('hse').textContent = data.clock.hse
+                ? formatFrequencyToMHz(data.clock.hse)
+                : '未配置';
+            document.getElementById('sysclk').textContent = data.clock.sysclk || '未配置';
+            document.getElementById('cpuclk').textContent = data.clock.cpuclk || '未配置';
+            document.getElementById('hclk').textContent = data.clock.hclk || '未配置';
+            document.getElementById('pclk1').textContent = data.clock.pclk1 || '未配置';
+            document.getElementById('pclk2').textContent = data.clock.pclk2 || '未配置';
+            
+            // SPI配置
+            const spiConfig = document.getElementById('spi-config');
+            spiConfig.innerHTML = '';
+            
+            if (data.peripherals.spi.length > 0) {
+                data.peripherals.spi.forEach(spi => {
+                    // 查找关联DMA
+                    const dmaList = data.peripherals.dma.filter(dma =>
+                        dma.name.includes(spi.name)
+                    );
+                    spiConfig.innerHTML += `
+                        <div class="font-medium mt-3">${spi.name}</div>
+                        <ul class="list-disc pl-5 text-sm">
+                            <li>模式: ${spi.Mode || spi.mode || '未配置'}</li>
+                            <li>波特率分频: ${spi.BaudRatePrescaler || spi.baudRate || '未配置'}</li>
+                            <li>时钟相位: ${spi.CLKPhase || spi.clockPhase || '未配置'}</li>
+                            <li>时钟极性: ${spi.CLKPolarity || spi.clockPolarity || '未配置'}</li>
+                            <li>数据宽度: ${spi.DataSize || spi.dataSize || '未配置'}</li>
+                            <li>方向: ${spi.Direction || spi.direction || '未配置'}</li>
+                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
+                        </ul>
+                    `;
+                });
+            } else {
+                spiConfig.innerHTML = '<p class="text-gray-500 italic">未配置SPI外设</p>';
+            }
+            
+            // UART配置
+            const uartConfig = document.getElementById('uart-config');
+            uartConfig.innerHTML = '';
+            
+            if (data.peripherals.uart.length > 0) {
+                data.peripherals.uart.forEach(uart => {
+                    const dmaList = data.peripherals.dma.filter(dma =>
+                        dma.name.includes(uart.name)
+                    );
+                    uartConfig.innerHTML += `
+                        <div class="font-medium mt-3">${uart.name}</div>
+                        <ul class="list-disc pl-5 text-sm">
+                            <li>波特率: ${uart.BaudRate || uart.baudRate || '未配置'}</li>
+                            <li>字长: ${uart.WordLength || uart.wordLength || '未配置'}</li>
+                            <li>奇偶校验: ${uart.Parity || uart.parity || '未配置'}</li>
+                            <li>停止位: ${uart.StopBits || uart.stopBits || '未配置'}</li>
+                            <li>硬件流控: ${uart.HwFlowCtl || uart.hwFlowCtl || '未配置'}</li>
+                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
+                        </ul>
+                    `;
+                });
+            } else {
+                uartConfig.innerHTML = '<p class="text-gray-500 italic">未配置UART/USART外设</p>';
+            }
+
+            // I2C配置
+            const i2cConfig = document.getElementById('i2c-config');
+            i2cConfig.innerHTML = '';
+            
+            if (data.peripherals.i2c.length > 0) {
+                data.peripherals.i2c.forEach(i2c => {
+                    const dmaList = data.peripherals.dma.filter(dma =>
+                        dma.name.includes(i2c.name)
+                    );
+                    i2cConfig.innerHTML += `
+                        <div class="font-medium mt-3">${i2c.name}</div>
+                        <ul class="list-disc pl-5 text-sm">
+                            <li>模式: ${i2c.Mode || i2c.mode || '未配置'}</li>
+                            <li>时钟频率: ${i2c.ClockSpeed || i2c.clockSpeed || '未配置'}</li>
+                            <li>地址: ${i2c.OwnAddress1 || i2c.ownAddress1 || '未配置'}</li>
+                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
+                        </ul>
+                    `;
+                });
+            } else {
+                i2cConfig.innerHTML = '<p class="text-gray-500 italic">未配置I2C外设</p>';
+            }
+
+            // CAN/FDCAN配置
+            const canConfig = document.getElementById('can-config');
+            canConfig.innerHTML = '';
+            if (data.peripherals.can.length > 0) {
+                data.peripherals.can.forEach(can => {
+                    const dmaList = data.peripherals.dma.filter(dma =>
+                        dma.name && can.name && dma.name.includes(can.name)
+                    );
+                    let nameHtml = '';
+                    if (can.name && can.name !== 'undefined') {
+                        nameHtml = `<div class="font-medium mt-3">${can.name}</div>`;
+                    }
+                    // 只显示有内容的项
+                    let baudRate = can.CalculateBaudRateNominal || can.CalculateBaudRate;
+                    let mode = can.Mode || can.mode;
+                    let frame = can.FrameFormat || can.frame;
+                    let ulHtml = '';
+                    if (baudRate && baudRate !== '未配置' && baudRate !== 'undefined') {
+                        ulHtml += `<li>波特率: ${baudRate}</li>`;
+                    }
+                    if (mode && mode !== '未配置' && mode !== 'undefined') {
+                        ulHtml += `<li>模式: ${mode}</li>`;
+                    }
+                    if (frame && frame !== '未配置' && frame !== 'undefined') {
+                        ulHtml += `<li>帧格式: ${frame}</li>`;
+                    }
+                    if (dmaList.length > 0) {
+                        ulHtml += `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>`;
+                    }
+                    // 如果没有任何内容则不显示
+                    if (nameHtml || ulHtml) {
+                        canConfig.innerHTML += `
+                            ${nameHtml}
+                            <ul class="list-disc pl-5 text-sm">
+                                ${ulHtml}
+                            </ul>
+                        `;
+                    }
+                });
+                // 如果所有CAN都没有内容，显示未配置提示
+                if (!canConfig.innerHTML.trim()) {
+                    canConfig.innerHTML = '<p class="text-gray-500 italic">未配置CAN/FDCAN外设</p>';
+                }
+            } else {
+                canConfig.innerHTML = '<p class="text-gray-500 italic">未配置CAN/FDCAN外设</p>';
+            }
+            
+            // GPIO配置
+            const gpioConfig = document.getElementById('gpio-config');
+            gpioConfig.innerHTML = '';
+            
+            if (data.gpio.length > 0) {
+                data.gpio.forEach(pin => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `
+                        <td class="py-3 px-4 font-medium">${pin.pin}</td>
+                        <td class="py-3 px-4">${pin.function}</td>
+                        <td class="py-3 px-4">${pin.mode}</td>
+                        <td class="py-3 px-4">${pin.label || '-'}</td>
+                    `;
+                    gpioConfig.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4" class="py-4 px-4 text-center text-gray-500">未配置任何引脚功能</td>';
+                gpioConfig.appendChild(row);
+            }
+            
+            // 项目配置
+            document.getElementById('project-name').textContent = data.project.name || '未指定';
+            document.getElementById('toolchain').textContent = data.project.toolchain || '未指定';
+            document.getElementById('heap-size').textContent = data.project.heapSize || '未指定';
+            document.getElementById('stack-size').textContent = data.project.stackSize || '未指定';
+
+            // 自动填充 CAN 选项（底盘可按需扩展）
+            try {
+                // CAN类型自动填充
+                const canTypeFD = document.getElementById('canTypeFD');
+                const canTypeStandard = document.getElementById('canTypeStandard');
+                if (data.peripherals.can.length > 0) {
+                    // 判断是否有FDCAN或CAN
+                    const hasFDCAN = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('FDCAN'));
+                    const hasCAN = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('CAN'));
+                    if (hasFDCAN) {
+                        canTypeFD.classList.remove('bg-gray-100', 'text-gray-700');
+                        canTypeFD.classList.add('bg-primary', 'text-white');
+                        canTypeStandard.classList.remove('bg-primary', 'text-white');
+                        canTypeStandard.classList.add('bg-gray-100', 'text-gray-700');
+                    } else if (hasCAN) {
+                        canTypeStandard.classList.remove('bg-gray-100', 'text-gray-700');
+                        canTypeStandard.classList.add('bg-primary', 'text-white');
+                        canTypeFD.classList.remove('bg-primary', 'text-white');
+                        canTypeFD.classList.add('bg-gray-100', 'text-gray-700');
+                    }
+                }
+
+                // CAN总线自动填充
+                // 只支持 CAN1/CAN2/CAN3
+                ['canBus1', 'canBus2'].forEach((id, idx) => {
+                    const btn = document.getElementById(id);
+                    if (data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes(`CAN${idx+1}`) || c.name.toUpperCase().includes(`FDCAN${idx+1}`))) {
+                        btn.classList.remove('bg-gray-100', 'text-gray-700');
+                        btn.classList.add('bg-primary', 'text-white');
+                    } else {
+                        btn.classList.remove('bg-primary', 'text-white');
+                        btn.classList.add('bg-gray-100', 'text-gray-700');
+                    }
+                });
+
+                // FIFO配置自动填充（如有需要可扩展，默认不自动填充）
+
+                // 触发生成头文件预览
+                if (typeof generateHeaderFile === 'function') {
+                    generateHeaderFile();
+                }
+            } catch (e) {
+                // 忽略填充异常
+            }
+
+            // 触发生成头文件预览（自动填充CAN配置）
+            try {
+                if (typeof generateHeaderFileFromIoc === 'function') {
+                    generateHeaderFileFromIoc(data);
+                }
+            } catch (e) {
+                // 忽略填充异常
+            }
+        }
+        
+        // 辅助函数：格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 辅助函数：格式化频率
+        function formatFrequency(hertz) {
+            const hz = parseInt(hertz);
+            if (hz >= 1e9) {
+                return (hz / 1e9).toFixed(2) + ' GHz';
+            } else if (hz >= 1e6) {
+                return (hz / 1e6).toFixed(2) + ' MHz';
+            } else if (hz >= 1e3) {
+                return (hz / 1e3).toFixed(2) + ' KHz';
+            }
+            return hz + ' Hz';
+        }
+
+        // 新增：HSE专用MHz格式化
+        function formatFrequencyToMHz(hseStr) {
+            // 支持 "24000000 Hz" 或 "24000000"
+            let val = hseStr.replace(/[^\d]/g, '');
+            let hz = parseInt(val);
+            if (isNaN(hz)) return hseStr;
+            return (hz / 1e6).toFixed(2) + ' MHz';
+        }
+        
+        // 帮助模态框控制
+        helpBtn.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+        });
+        
+        closeHelp.addEventListener('click', () => {
+            helpModal.classList.add('hidden');
+        });
+        
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.add('hidden');
+            }
+        });
+        
+        // 关于模态框控制
+        aboutBtn.addEventListener('click', () => {
+            aboutModal.classList.remove('hidden');
+        });
+        
+        closeAbout.addEventListener('click', () => {
+            aboutModal.classList.add('hidden');
+        });
+        
+        aboutModal.addEventListener('click', (e) => {
+            if (e.target === aboutModal) {
+                aboutModal.classList.add('hidden');
+            }
+        });
+        
+        // 折叠/展开部分
+        document.querySelectorAll('.section-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const targetId = toggle.getAttribute('data-target');
+                const target = document.getElementById(targetId);
+                const icon = toggle.querySelector('i.fa-chevron-down');
+                
+                // 切换展开/折叠状态
+                if (target.classList.contains('section-transition')) {
+                    target.classList.remove('section-transition');
+                    target.classList.add('section-expand');
+                    icon.classList.add('rotate-180');
+                } else {
+                    target.classList.remove('section-expand');
+                    target.classList.add('section-transition');
+                    icon.classList.remove('rotate-180');
+                }
+            });
+        });
+        
+        // 深色模式切换
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('bg-gray-900');
+            document.body.classList.toggle('text-white');
+            document.body.classList.toggle('bg-gray-50');
+            document.body.classList.toggle('text-dark');
+            
+            const icon = themeToggle.querySelector('i');
+            if (icon.classList.contains('fa-moon-o')) {
+                icon.classList.remove('fa-moon-o');
+                icon.classList.add('fa-sun-o');
+            } else {
+                icon.classList.remove('fa-sun-o');
+                icon.classList.add('fa-moon-o');
+            }
+        });
+
+        // 复制生成工具相关JS（可直接粘贴，或将相关函数合并到主JS）
+        // 包括：generateHeaderFile, copyToClipboard, downloadHeaderFile, updateCanUI, updateFifoVisibility, validateFifoSelection, showFifoWarning, resetToDefault, handleFileUpload, parseHeaderFile, fixFifoSelection, showLoadSuccessNotification
+
+        // 监听底盘类型选择变化，实时更新预览
+document.querySelectorAll('input[name="chassisType"]').forEach(radio => {
+    radio.addEventListener('change', generateHeaderFile);
+});
+
+// 生成头文件内容（只展示底盘部分，其他部分保持原有逻辑）
+function generateHeaderFile() {
+    // ...existing code...
+    // 获取选中的底盘类型
+    const selectedChassis = document.querySelector('input[name="chassisType"]:checked')?.value || 'none';
+
+    // ...existing code...
+    // 根据选择添加底盘宏定义
+    let code = '';
+    // ...头文件保护...
+    code += `/* 底盘初始化配置选项 */\n`;
+    code += `// 选择底盘类型\n`;
+    if (selectedChassis === 'omni') {
+        code += `#define USER_OMNI // 全向轮底盘\n`;
+        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
+        code += `// #define USER_SWERVE // 舵轮底盘\n`;
+        code += `// #define USER_BALANCE // 平衡底盘\n`;
+    } else if (selectedChassis === 'mecanum') {
+        code += `// #define USER_OMNI // 全向轮底盘\n`;
+        code += `#define USER_MECANUM // 麦克纳姆底盘\n`;
+        code += `// #define USER_SWERVE // 舵轮底盘\n`;
+        code += `// #define USER_BALANCE // 平衡底盘\n`;
+    } else if (selectedChassis === 'swerve') {
+        code += `// #define USER_OMNI // 全向轮底盘\n`;
+        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
+        code += `#define USER_SWERVE // 舵轮底盘\n`;
+        code += `// #define USER_BALANCE // 平衡底盘\n`;
+    } else if (selectedChassis === 'balance') {
+        code += `// #define USER_OMNI // 全向轮底盘\n`;
+        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
+        code += `#define USER_BALANCE // 平衡底盘\n`;
+    } else { // 不启用底盘
+        code += `// 未启用任何底盘类型\n`;
+        code += `// #define USER_OMNI // 全向轮底盘\n`;
+        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
+        code += `// #define USER_SWERVE // 舵轮底盘\n`;
+        code += `// #define USER_BALANCE // 平衡底盘\n`;
+    }
+    // ...existing code...
+    // 更新预览
+    document.getElementById('codePreview').textContent = code;
+}
+
+// 新增：根据解析结果自动生成头文件预览（CAN配置自动填充）
+function generateHeaderFileFromIoc(data) {
+    // 获取文件名和保护宏
+    const fileName = document.getElementById('fileName')?.value?.trim() || 'user_configuration';
+    const guardName = document.getElementById('guardName')?.value?.trim() || fileName.toUpperCase() + '_H';
+
+    let code = '';
+    code += `#ifndef ${guardName}\n#define ${guardName}\n\n`;
+
+    // 底盘配置（保持原有逻辑）
+    // ...existing code for chassis...
+
+    // CAN配置自动填充
+    code += `/* CAN 初始化配置选项 */\n\n`;
+
+    // 选择 CAN 类型
+    let canTypeFD = false, canTypeStandard = false;
+    if (data.peripherals.can.length > 0) {
+        canTypeFD = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('FDCAN'));
+        canTypeStandard = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('CAN'));
+    }
+    if (canTypeFD) {
+        code += `#define USER_CAN_FD //FDCAN\n`;
+        code += `// #define USER_CAN_STANDARD //CAN\n\n`;
+    } else if (canTypeStandard) {
+        code += `// #define USER_CAN_FD //FDCAN\n`;
+        code += `#define USER_CAN_STANDARD //CAN\n\n`;
+    } else {
+        code += `// #define USER_CAN_FD //FDCAN\n`;
+        code += `// #define USER_CAN_STANDARD //CAN\n\n`;
+    }
+
+    // 选择 CAN 总线
+    let canBusArr = [];
+    if (data.peripherals.can.length > 0) {
+        data.peripherals.can.forEach(c => {
+            if (c.name) {
+                let idx = c.name.match(/\d+/);
+                if (idx) canBusArr.push(idx[0]);
+            }
+        });
+    }
+    for (let i = 1; i <= 3; i++) {
+        if (canBusArr.includes(i.toString())) {
+            code += `#define USER_CAN${i}\n`;
+        } else {
+            code += `// #define USER_CAN${i}\n`;
+        }
+    }
+    code += `\n`;
+
+    // 选择 CAN FIFO
+    for (let i = 1; i <= 3; i++) {
+        if (canBusArr.includes(i.toString())) {
+            // 默认选中 FIFO_0，FIFO_1 注释
+            code += `#define USER_CAN${i}_FIFO_0\n`;
+            code += `// #define USER_CAN${i}_FIFO_1\n`;
+        } else {
+            code += `// #define USER_CAN${i}_FIFO_0\n`;
+            code += `// #define USER_CAN${i}_FIFO_1\n`;
+        }
+    }
+
+    code += `\n#endif // ${guardName}\n`;
+
+    // 更新预览
+    document.getElementById('codePreview').textContent = code;
+}
+    </script>
+</body>
+</html>
