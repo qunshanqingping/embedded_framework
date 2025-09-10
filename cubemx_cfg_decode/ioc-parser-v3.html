@@ -786,10 +786,7 @@
                     spi: [],
                     uart: [],
                     i2c: [],
-                    can: [],
-                    dma: [],
-                    nvic: [],
-                    rcc: {}
+                    can: []
                 },
                 gpio: [],
                 project: {
@@ -799,276 +796,79 @@
                     stackSize: ''
                 }
             };
-            
-            // 正则表达式模式 - 适配CubeMX 6.x新格式
+            // 正则表达式模式
             const patterns = {
                 mcuModel: /^Mcu\.Name\s*=\s*(.+)$/,
                 mcuPackage: /^Mcu\.Package\s*=\s*(.+)$/,
                 cubemxVersion: /^MxCube\.Version\s*=\s*(.+)$/,
                 firmwareVersion: /^ProjectManager\.FirmwarePackage\s*=\s*[^_]+_v(.+)$/,
-                
-                // 时钟配置
                 hse: /^RCC\.HSE_VALUE\s*=\s*(\d+)/,
                 sysclk: /^RCC\.SYSCLKFreq_VALUE\s*=\s*(\d+)/,
                 cpuclk: /^RCC\.CortexFreq_Value\s*=\s*(\d+)/,
                 hclk: /^RCC\.HCLKFreq_Value\s*=\s*(\d+)/,
                 pclk1: /^RCC\.APB1Freq_Value\s*=\s*(\d+)/,
                 pclk2: /^RCC\.APB2Freq_Value\s*=\s*(\d+)/,
-                
-                // SPI配置
-                spiMode: /^(SPI\d+)\.Mode\s*=\s*(.+)$/,
-                spiBaudRate: /^(SPI\d+)\.BaudRatePrescaler\s*=\s*(.+)$/,
-                spiClockPhase: /^(SPI\d+)\.CLKPhase\s*=\s*(.+)$/,
-                spiClockPolarity: /^(SPI\d+)\.CLKPolarity\s*=\s*(.+)$/,
-                spiDataSize: /^(SPI\d+)\.DataSize\s*=\s*(.+)$/,
-                spiDirection: /^(SPI\d+)\.Direction\s*=\s*(.+)$/,
-                
-                // DMA配置
-                dmaRequest: /^Dma\.Request(\d+)\s*=\s*(.+)$/,
-                dmaInstance: /^Dma\.([^.]+)\.\d+\.Instance\s*=\s*(.+)$/,
-                dmaDirection: /^Dma\.([^.]+)\.\d+\.Direction\s*=\s*(.+)$/,
-                dmaPriority: /^Dma\.([^.]+)\.\d+\.Priority\s*=\s*(.+)$/,
-                
-                // NVIC配置
-                nvicIrq: /^NVIC\.([^.]+IRQn)\s*=\s*(.+)$/,
-                
-                // RCC配置
-                rccSysclkSource: /^RCC\.SYSCLKSource\s*=\s*(.+)$/,
-                rccPllConfig: /^RCC\.DIV(N|M|P)\d+\s*=\s*(\d+)/,
-                
-                // GPIO配置
+                // 只匹配端口名
+                spiEnable: /^(SPI\d+)\.Mode\s*=.*/,
+                uartEnable: /^((?:USART|UART|LPUART)\d+)\.BaudRate\s*=.*/i,
+                // canEnable: /^((?:CAN|FDCAN)\d+)\.Mode\s*=.*/i, // 旧逻辑，兼容保留
+                canAny: /^((?:CAN|FDCAN)\d+)\./i, // 新增：只要有CAN/FDCAN配置行就算启用
+                i2cEnable: /^(I2C\d+)\.Mode\s*=.*/i,
                 gpioPin: /^([A-Z]+\d+[^\.]*)\.Signal\s*=\s*(.+)$/,
                 gpioMode: /^([A-Z]+\d+[^\.]*)\.Mode\s*=\s*(.+)$/,
                 gpioLabel: /^([A-Z]+\d+[^\.]*)\.GPIO_Label\s*=\s*(.+)$/,
-                
-                // 项目配置
                 projectName: /^ProjectManager\.ProjectName\s*=\s*(.+)$/,
                 toolchain: /^ProjectManager\.CompilerLinker\s*=\s*(.+)$/,
                 heapSize: /^ProjectManager\.HeapSize\s*=\s*(.+)$/,
                 stackSize: /^ProjectManager\.StackSize\s*=\s*(.+)$/
             };
-            
-            // 临时存储外设配置
-            const spiTemp = {};
-            const dmaTemp = {};
-            const uartTemp = {};
-            const canTemp = {};
-            const i2cTemp = {};
-            
+            // 端口名集合，避免重复
+            const spiSet = new Set();
+            const uartSet = new Set();
+            const canSet = new Set();
+            const i2cSet = new Set();
             // 解析每一行
             lines.forEach(line => {
                 line = line.trim();
                 if (!line) return;
-                
                 // 微控制器信息
                 const mcuModelMatch = line.match(patterns.mcuModel);
-                if (mcuModelMatch) {
-                    result.mcu.model = mcuModelMatch[1];
-                }
-                
+                if (mcuModelMatch) result.mcu.model = mcuModelMatch[1];
                 const mcuPackageMatch = line.match(patterns.mcuPackage);
-                if (mcuPackageMatch) {
-                    result.mcu.package = mcuPackageMatch[1];
-                }
-                
+                if (mcuPackageMatch) result.mcu.package = mcuPackageMatch[1];
                 const cubemxVersionMatch = line.match(patterns.cubemxVersion);
-                if (cubemxVersionMatch) {
-                    result.mcu.cubemxVersion = cubemxVersionMatch[1];
-                }
-                
+                if (cubemxVersionMatch) result.mcu.cubemxVersion = cubemxVersionMatch[1];
                 const firmwareVersionMatch = line.match(patterns.firmwareVersion);
-                if (firmwareVersionMatch) {
-                    result.mcu.firmwareVersion = firmwareVersionMatch[1];
-                }
-                
+                if (firmwareVersionMatch) result.mcu.firmwareVersion = firmwareVersionMatch[1];
                 // 时钟配置
                 const hseMatch = line.match(patterns.hse);
-                if (hseMatch) {
-                    result.clock.hse = `${hseMatch[1]} Hz`;
-                }
-                
+                if (hseMatch) result.clock.hse = `${hseMatch[1]} Hz`;
                 const sysclkMatch = line.match(patterns.sysclk);
-                if (sysclkMatch) {
-                    result.clock.sysclk = `${formatFrequency(sysclkMatch[1])}`;
-                }
-                
+                if (sysclkMatch) result.clock.sysclk = `${formatFrequency(sysclkMatch[1])}`;
                 const cpuclkMatch = line.match(patterns.cpuclk);
-                if (cpuclkMatch) {
-                    result.clock.cpuclk = `${formatFrequency(cpuclkMatch[1])}`;
-                }
-                
+                if (cpuclkMatch) result.clock.cpuclk = `${formatFrequency(cpuclkMatch[1])}`;
                 const hclkMatch = line.match(patterns.hclk);
-                if (hclkMatch) {
-                    result.clock.hclk = `${formatFrequency(hclkMatch[1])}`;
-                }
-                
+                if (hclkMatch) result.clock.hclk = `${formatFrequency(hclkMatch[1])}`;
                 const pclk1Match = line.match(patterns.pclk1);
-                if (pclk1Match) {
-                    result.clock.pclk1 = `${formatFrequency(pclk1Match[1])}`;
-                }
-                
+                if (pclk1Match) result.clock.pclk1 = `${formatFrequency(pclk1Match[1])}`;
                 const pclk2Match = line.match(patterns.pclk2);
-                if (pclk2Match) {
-                    result.clock.pclk2 = `${formatFrequency(pclk2Match[1])}`;
-                }
-                
-                // SPI配置
-                const spiModeMatch = line.match(patterns.spiMode);
-                if (spiModeMatch) {
-                    const spiName = spiModeMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].mode = spiModeMatch[2];
-                }
-                
-                const spiBaudRateMatch = line.match(patterns.spiBaudRate);
-                if (spiBaudRateMatch) {
-                    const spiName = spiBaudRateMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].baudRate = spiBaudRateMatch[2].replace('SPI_BAUDRATEPRESCALER_', '分频: ');
-                }
-                
-                const spiClockPhaseMatch = line.match(patterns.spiClockPhase);
-                if (spiClockPhaseMatch) {
-                    const spiName = spiClockPhaseMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].clockPhase = spiClockPhaseMatch[2].replace('SPI_PHASE_', '');
-                }
-                
-                const spiClockPolarityMatch = line.match(patterns.spiClockPolarity);
-                if (spiClockPolarityMatch) {
-                    const spiName = spiClockPolarityMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].clockPolarity = spiClockPolarityMatch[2].replace('SPI_POLARITY_', '');
-                }
-                
-                const spiDataSizeMatch = line.match(patterns.spiDataSize);
-                if (spiDataSizeMatch) {
-                    const spiName = spiDataSizeMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].dataSize = spiDataSizeMatch[2].replace('SPI_DATASIZE_', '');
-                }
-                
-                const spiDirectionMatch = line.match(patterns.spiDirection);
-                if (spiDirectionMatch) {
-                    const spiName = spiDirectionMatch[1];
-                    if (!spiTemp[spiName]) {
-                        spiTemp[spiName] = {};
-                    }
-                    spiTemp[spiName].direction = spiDirectionMatch[2].replace('SPI_DIRECTION_', '');
-                }
-                
-                // 串口解析
-                const uartMatch = line.match(/^((?:USART|UART|LPUART)\d+)\.(\w+)\s*=\s*(.+)$/i);
-                if (uartMatch) {
-                    const uartName = uartMatch[1];
-                    const key = uartMatch[2];
-                    const val = uartMatch[3];
-                    if (!uartTemp[uartName]) uartTemp[uartName] = {};
-                    uartTemp[uartName][key] = val;
-                }
-
-                // CAN/FDCAN解析
-                const canMatch = line.match(/^((?:CAN|FDCAN)\d+)\.(\w+)\s*=\s*(.+)$/i);
-                if (canMatch) {
-                    const canName = canMatch[1];
-                    const key = canMatch[2];
-                    const val = canMatch[3];
-                    if (!canTemp[canName]) canTemp[canName] = {};
-                    canTemp[canName][key] = val;
-                }
-
-                // 新增：CAN/FDCAN波特率解析
-                const canBaudRateMatch = line.match(patterns.canBaudRate);
-                if (canBaudRateMatch) {
-                    const canName = canBaudRateMatch[1];
-                    if (!canTemp[canName]) canTemp[canName] = {};
-                    canTemp[canName]['BaudRate'] = canBaudRateMatch[2];
-                }
-
-                // I2C解析
-                const i2cMatch = line.match(patterns.i2cProperty);
-                if (i2cMatch) {
-                    const i2cName = i2cMatch[1];
-                    const key = i2cMatch[2];
-                    const val = i2cMatch[3];
-                    if (!i2cTemp[i2cMatch]) i2cTemp[i2cMatch] = {};
-                    i2cTemp[i2cMatch][key] = val;
-                }
-
-                // DMA配置
-                const dmaRequestMatch = line.match(patterns.dmaRequest);
-                if (dmaRequestMatch) {
-                    const dmaName = dmaRequestMatch[2];
-                    if (!dmaTemp[dmaName]) {
-                        dmaTemp[dmaName] = {};
-                    }
-                }
-                
-                const dmaInstanceMatch = line.match(patterns.dmaInstance);
-                if (dmaInstanceMatch) {
-                    const dmaName = dmaInstanceMatch[1];
-                    if (!dmaTemp[dmaName]) {
-                        dmaTemp[dmaName] = {};
-                    }
-                    dmaTemp[dmaName].instance = dmaInstanceMatch[2];
-                }
-                
-                const dmaDirectionMatch = line.match(patterns.dmaDirection);
-                if (dmaDirectionMatch) {
-                    const dmaName = dmaDirectionMatch[1];
-                    if (!dmaTemp[dmaName]) {
-                        dmaTemp[dmaName] = {};
-                    }
-                    dmaTemp[dmaName].direction = dmaDirectionMatch[2].replace('DMA_', '');
-                }
-                
-                const dmaPriorityMatch = line.match(patterns.dmaPriority);
-                if (dmaPriorityMatch) {
-                    const dmaName = dmaPriorityMatch[1];
-                    if (!dmaTemp[dmaName]) {
-                        dmaTemp[dmaName] = {};
-                    }
-                    dmaTemp[dmaName].priority = dmaPriorityMatch[2].replace('DMA_PRIORITY_', '');
-                }
-                
-                // NVIC配置
-                const nvicIrqMatch = line.match(patterns.nvicIrq);
-                if (nvicIrqMatch) {
-                    const irqName = nvicIrqMatch[1];
-                    const irqParams = nvicIrqMatch[2].split(':');
-                    result.peripherals.nvic.push({
-                        name: irqName.replace('_IRQn', ''),
-                        enabled: irqParams[0] === 'true',
-                        priority: irqParams[1]
-                    });
-                }
-                
-                // RCC配置
-                const rccSysclkSourceMatch = line.match(patterns.rccSysclkSource);
-                if (rccSysclkSourceMatch) {
-                    result.peripherals.rcc.sysclkSource = rccSysclkSourceMatch[1].replace('RCC_SYSCLKSOURCE_', '');
-                }
-                
-                const rccPllConfigMatch = line.match(patterns.rccPllConfig);
-                if (rccPllConfigMatch) {
-                    result.peripherals.rcc[`pll${rccPllConfigMatch[1]}`] = rccPllConfigMatch[2];
-                }
-                
+                if (pclk2Match) result.clock.pclk2 = `${formatFrequency(pclk2Match[1])}`;
+                // SPI端口
+                const spiEnableMatch = line.match(patterns.spiEnable);
+                if (spiEnableMatch) spiSet.add(spiEnableMatch[1]);
+                // UART端口
+                const uartEnableMatch = line.match(patterns.uartEnable);
+                if (uartEnableMatch) uartSet.add(uartEnableMatch[1]);
+                // CAN端口（新逻辑：只要有CAN/FDCAN配置行就算启用）
+                const canAnyMatch = line.match(patterns.canAny);
+                if (canAnyMatch) canSet.add(canAnyMatch[1]);
+                // I2C端口
+                const i2cEnableMatch = line.match(patterns.i2cEnable);
+                if (i2cEnableMatch) i2cSet.add(i2cEnableMatch[1]);
                 // GPIO配置
                 const gpioPinMatch = line.match(patterns.gpioPin);
                 if (gpioPinMatch) {
                     const pinName = gpioPinMatch[1];
-                    // 查找现有引脚配置或创建新的
                     let gpioEntry = result.gpio.find(g => g.pin === pinName);
                     if (!gpioEntry) {
                         gpioEntry = { pin: pinName, function: '', mode: '', label: '' };
@@ -1076,7 +876,6 @@
                     }
                     gpioEntry.function = gpioPinMatch[2].replace('GPIO_', '');
                 }
-                
                 const gpioModeMatch = line.match(patterns.gpioMode);
                 if (gpioModeMatch) {
                     const pinName = gpioModeMatch[1];
@@ -1087,7 +886,6 @@
                     }
                     gpioEntry.mode = gpioModeMatch[2];
                 }
-                
                 const gpioLabelMatch = line.match(patterns.gpioLabel);
                 if (gpioLabelMatch) {
                     const pinName = gpioLabelMatch[1];
@@ -1098,74 +896,25 @@
                     }
                     gpioEntry.label = gpioLabelMatch[2];
                 }
-                
                 // 项目配置
                 const projectNameMatch = line.match(patterns.projectName);
-                if (projectNameMatch) {
-                    result.project.name = projectNameMatch[1];
-                }
-                
+                if (projectNameMatch) result.project.name = projectNameMatch[1];
                 const toolchainMatch = line.match(patterns.toolchain);
-                if (toolchainMatch) {
-                    result.project.toolchain = toolchainMatch[1];
-                }
-                
+                if (toolchainMatch) result.project.toolchain = toolchainMatch[1];
                 const heapSizeMatch = line.match(patterns.heapSize);
-                if (heapSizeMatch) {
-                    result.project.heapSize = heapSizeMatch[1];
-                }
-                
+                if (heapSizeMatch) result.project.heapSize = heapSizeMatch[1];
                 const stackSizeMatch = line.match(patterns.stackSize);
-                if (stackSizeMatch) {
-                    result.project.stackSize = stackSizeMatch[1];
-                }
+                if (stackSizeMatch) result.project.stackSize = stackSizeMatch[1];
             });
-            
-            // 将临时存储的SPI配置转换为数组
-            for (const spiName in spiTemp) {
-                result.peripherals.spi.push({
-                    name: spiName,
-                    ...spiTemp[spiName]
-                });
-            }
-            
-            // 将临时存储的UART配置转换为数组
-            for (const uartName in uartTemp) {
-                result.peripherals.uart.push({
-                    name: uartName,
-                    ...uartTemp[uartName]
-                });
-            }
-            
-            // 将临时存储的CAN配置转换为数组
-            for (const canName in canTemp) {
-                result.peripherals.can.push({
-                    name: canName,
-                    ...canTemp[canName]
-                });
-            }
-            
-            // 将临时存储的I2C配置转换为数组
-            for (const i2cName in i2cTemp) {
-                result.peripherals.i2c.push({
-                    name: i2cName,
-                    ...i2cTemp[i2cName]
-                });
-            }
-            
-            // 将临时存储的DMA配置转换为数组
-            for (const dmaName in dmaTemp) {
-                result.peripherals.dma.push({
-                    name: dmaName,
-                    ...dmaTemp[dmaName]
-                });
-            }
-            
+            // 填充端口名数组
+            result.peripherals.spi = Array.from(spiSet);
+            result.peripherals.uart = Array.from(uartSet);
+            result.peripherals.can = Array.from(canSet);
+            result.peripherals.i2c = Array.from(i2cSet);
             // 验证是否解析到了基本信息
             if (!result.mcu.model) {
                 throw new Error('无法识别微控制器型号，请确保上传的是有效的IOC文件（CubeMX 6.x版本生成）');
             }
-            
             return result;
         }
         
@@ -1191,123 +940,37 @@
             // SPI配置
             const spiConfig = document.getElementById('spi-config');
             spiConfig.innerHTML = '';
-            
             if (data.peripherals.spi.length > 0) {
-                data.peripherals.spi.forEach(spi => {
-                    // 查找关联DMA
-                    const dmaList = data.peripherals.dma.filter(dma =>
-                        dma.name.includes(spi.name)
-                    );
-                    spiConfig.innerHTML += `
-                        <div class="font-medium mt-3">${spi.name}</div>
-                        <ul class="list-disc pl-5 text-sm">
-                            <li>模式: ${spi.Mode || spi.mode || '未配置'}</li>
-                            <li>波特率分频: ${spi.BaudRatePrescaler || spi.baudRate || '未配置'}</li>
-                            <li>时钟相位: ${spi.CLKPhase || spi.clockPhase || '未配置'}</li>
-                            <li>时钟极性: ${spi.CLKPolarity || spi.clockPolarity || '未配置'}</li>
-                            <li>数据宽度: ${spi.DataSize || spi.dataSize || '未配置'}</li>
-                            <li>方向: ${spi.Direction || spi.direction || '未配置'}</li>
-                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
-                        </ul>
-                    `;
-                });
+                spiConfig.innerHTML = `<div>已启用: ${data.peripherals.spi.join(', ')}</div>`;
             } else {
-                spiConfig.innerHTML = '<p class="text-gray-500 italic">未配置SPI外设</p>';
+                spiConfig.innerHTML = '<p class="text-gray-500 italic">未启用SPI外设</p>';
             }
             
             // UART配置
             const uartConfig = document.getElementById('uart-config');
             uartConfig.innerHTML = '';
-            
             if (data.peripherals.uart.length > 0) {
-                data.peripherals.uart.forEach(uart => {
-                    const dmaList = data.peripherals.dma.filter(dma =>
-                        dma.name.includes(uart.name)
-                    );
-                    uartConfig.innerHTML += `
-                        <div class="font-medium mt-3">${uart.name}</div>
-                        <ul class="list-disc pl-5 text-sm">
-                            <li>波特率: ${uart.BaudRate || uart.baudRate || '未配置'}</li>
-                            <li>字长: ${uart.WordLength || uart.wordLength || '未配置'}</li>
-                            <li>奇偶校验: ${uart.Parity || uart.parity || '未配置'}</li>
-                            <li>停止位: ${uart.StopBits || uart.stopBits || '未配置'}</li>
-                            <li>硬件流控: ${uart.HwFlowCtl || uart.hwFlowCtl || '未配置'}</li>
-                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
-                        </ul>
-                    `;
-                });
+                uartConfig.innerHTML = `<div>已启用: ${data.peripherals.uart.join(', ')}</div>`;
             } else {
-                uartConfig.innerHTML = '<p class="text-gray-500 italic">未配置UART/USART外设</p>';
+                uartConfig.innerHTML = '<p class="text-gray-500 italic">未启用UART/USART外设</p>';
             }
 
             // I2C配置
             const i2cConfig = document.getElementById('i2c-config');
             i2cConfig.innerHTML = '';
-            
             if (data.peripherals.i2c.length > 0) {
-                data.peripherals.i2c.forEach(i2c => {
-                    const dmaList = data.peripherals.dma.filter(dma =>
-                        dma.name.includes(i2c.name)
-                    );
-                    i2cConfig.innerHTML += `
-                        <div class="font-medium mt-3">${i2c.name}</div>
-                        <ul class="list-disc pl-5 text-sm">
-                            <li>模式: ${i2c.Mode || i2c.mode || '未配置'}</li>
-                            <li>时钟频率: ${i2c.ClockSpeed || i2c.clockSpeed || '未配置'}</li>
-                            <li>地址: ${i2c.OwnAddress1 || i2c.ownAddress1 || '未配置'}</li>
-                            ${dmaList.length > 0 ? `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>` : ''}
-                        </ul>
-                    `;
-                });
+                i2cConfig.innerHTML = `<div>已启用: ${data.peripherals.i2c.join(', ')}</div>`;
             } else {
-                i2cConfig.innerHTML = '<p class="text-gray-500 italic">未配置I2C外设</p>';
+                i2cConfig.innerHTML = '<p class="text-gray-500 italic">未启用I2C外设</p>';
             }
 
             // CAN/FDCAN配置
             const canConfig = document.getElementById('can-config');
             canConfig.innerHTML = '';
             if (data.peripherals.can.length > 0) {
-                data.peripherals.can.forEach(can => {
-                    const dmaList = data.peripherals.dma.filter(dma =>
-                        dma.name && can.name && dma.name.includes(can.name)
-                    );
-                    let nameHtml = '';
-                    if (can.name && can.name !== 'undefined') {
-                        nameHtml = `<div class="font-medium mt-3">${can.name}</div>`;
-                    }
-                    // 只显示有内容的项
-                    let baudRate = can.CalculateBaudRateNominal || can.CalculateBaudRate;
-                    let mode = can.Mode || can.mode;
-                    let frame = can.FrameFormat || can.frame;
-                    let ulHtml = '';
-                    if (baudRate && baudRate !== '未配置' && baudRate !== 'undefined') {
-                        ulHtml += `<li>波特率: ${baudRate}</li>`;
-                    }
-                    if (mode && mode !== '未配置' && mode !== 'undefined') {
-                        ulHtml += `<li>模式: ${mode}</li>`;
-                    }
-                    if (frame && frame !== '未配置' && frame !== 'undefined') {
-                        ulHtml += `<li>帧格式: ${frame}</li>`;
-                    }
-                    if (dmaList.length > 0) {
-                        ulHtml += `<li class="mt-2 text-blue-600">DMA: ${dmaList.map(dma => `${dma.name} (${dma.instance || ''})`).join(', ')}</li>`;
-                    }
-                    // 如果没有任何内容则不显示
-                    if (nameHtml || ulHtml) {
-                        canConfig.innerHTML += `
-                            ${nameHtml}
-                            <ul class="list-disc pl-5 text-sm">
-                                ${ulHtml}
-                            </ul>
-                        `;
-                    }
-                });
-                // 如果所有CAN都没有内容，显示未配置提示
-                if (!canConfig.innerHTML.trim()) {
-                    canConfig.innerHTML = '<p class="text-gray-500 italic">未配置CAN/FDCAN外设</p>';
-                }
+                canConfig.innerHTML = `<div>已启用: ${data.peripherals.can.join(', ')}</div>`;
             } else {
-                canConfig.innerHTML = '<p class="text-gray-500 italic">未配置CAN/FDCAN外设</p>';
+                canConfig.innerHTML = '<p class="text-gray-500 italic">未启用CAN/FDCAN外设</p>';
             }
             
             // GPIO配置
