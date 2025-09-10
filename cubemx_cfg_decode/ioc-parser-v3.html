@@ -59,6 +59,122 @@
                 @apply border-red-300 bg-red-50;
             }
         }
+        /* 深色模式适配 */
+        body.dark {
+            background-color: #181a20 !important;
+            color: #e5e7eb !important;
+        }
+        body.dark .text-gray-500,
+        body.dark .text-gray-600,
+        body.dark .text-gray-700 {
+            color: #cbd5e1 !important;
+        }
+        body.dark .bg-white,
+        body.dark .bg-gray-50,
+        body.dark .bg-gray-100 {
+            background-color: #23272f !important;
+        }
+        body.dark .card-hover {
+            background-color: #23272f !important;
+            border-color: #2d3748 !important;
+        }
+        body.dark input,
+        body.dark select,
+        body.dark textarea {
+            background-color: #23272f !important;
+            color: #e5e7eb !important;
+            border-color: #374151 !important;
+        }
+        body.dark .file-info, body.dark .file-name, body.dark .file-size {
+            color: #cbd5e1 !important;
+        }
+        body.dark .bg-primary/10 {
+            background-color: rgba(22,93,255,0.15) !important;
+        }
+        body.dark .bg-primary/5, body.dark .from-primary\/5, body.dark .to-secondary\/5 {
+            background-color: #23272f !important;
+        }
+        body.dark .border-gray-100, body.dark .border-gray-200 {
+            border-color: #374151 !important;
+        }
+        body.dark .text-dark {
+            color: #e5e7eb !important;
+        }
+        body.dark .text-primary {
+            color: #4f8cff !important;
+        }
+        body.dark .bg-primary {
+            background-color: #165DFF !important;
+        }
+        body.dark .bg-yellow-500 {
+            background-color: #facc15 !important;
+        }
+        body.dark .bg-green-500 {
+            background-color: #22c55e !important;
+        }
+        body.dark .bg-red-50 {
+            background-color: #3b1f1f !important;
+        }
+        body.dark .border-red-200 {
+            border-color: #f87171 !important;
+        }
+        body.dark .border-primary/50 {
+            border-color: #4f8cff80 !important;
+        }
+        body.dark .text-primary/80 {
+            color: #4f8cffcc !important;
+        }
+        body.dark .text-primary/70 {
+            color: #4f8cffb3 !important;
+        }
+        body.dark .text-primary/10 {
+            color: #4f8cff1a !important;
+        }
+        body.dark .bg-gray-900 {
+            background-color: #181a20 !important;
+        }
+        body.dark .bg-gray-100 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-200 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-400 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-600 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-700 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-800 {
+            background-color: #23272f !important;
+        }
+        body.dark .bg-gray-900 {
+            background-color: #181a20 !important;
+        }
+        body.dark .text-white {
+            color: #e5e7eb !important;
+        }
+        body.dark .text-black {
+            color: #e5e7eb !important;
+        }
+        body.dark .text-gray-400 {
+            color: #94a3b8 !important;
+        }
+        body.dark .text-gray-300 {
+            color: #cbd5e1 !important;
+        }
+        body.dark .text-gray-200 {
+            color: #e5e7eb !important;
+        }
+        body.dark .text-gray-100 {
+            color: #f1f5f9 !important;
+        }
+        body.dark .rounded-xl {
+            box-shadow: 0 2px 8px #0006;
+        }
     </style>
 </head>
 <body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
@@ -574,7 +690,7 @@
 
                     <div>
                         <h5 class="font-semibold">致谢</h5>
-                        <p class="text-gray-600 text-sm">特别感谢 STM32CubeMX 团队提供的强大工具</p>
+                        <p class="text-gray-600 text-sm">特别感谢 STM32CubeMX 团队���供的强大工具</p>
                     </div>
                 </div>
             </div>
@@ -1128,11 +1244,7 @@
 
         // 深色模式切换
         themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('bg-gray-900');
-            document.body.classList.toggle('text-white');
-            document.body.classList.toggle('bg-gray-50');
-            document.body.classList.toggle('text-dark');
-
+            document.body.classList.toggle('dark');
             const icon = themeToggle.querySelector('i');
             if (icon.classList.contains('fa-moon-o')) {
                 icon.classList.remove('fa-moon-o');
@@ -1353,6 +1465,14 @@ function generateHeaderFile(){
 
     let code = '';
     code += `#ifndef ${guard}\n#define ${guard}\n\n`;
+    // 芯片系列
+    let mcuSeries = getMcuSeries(lastParsedData?.mcu?.model||'');
+    code += '/* 芯片系列自动识别 */\n';
+    const allSeries = ['STM32F4','STM32H7','STM32F1','STM32G4','STM32L4','STM32F0','STM32F3','STM32F7','STM32L0','STM32L1','STM32L5','STM32G0','STM32U5','STM32W','STM32MP1'];
+    allSeries.forEach(s => {
+        if (mcuSeries === s) code += `#define USER_MCU_SERIES_${s}\n`;
+    });
+    code += '\n';
     // 遥控器
     code += '/* 遥控器初始化配置选项 */\n';
     if (remote==='dt7') {
@@ -1402,6 +1522,38 @@ function generateHeaderFile(){
 
     document.getElementById('codePreview').textContent = code;
     updateAllFifoValidation();
+}
+
+function getMcuSeries(model) {
+    // 典型型号如 STM32F407ZGT6、STM32H743VIT6、STM32F103C8T6
+    if (!model) return '';
+    const m = model.match(/STM32([A-Z])(\d+)/i);
+    if (!m) return '';
+    const family = m[1].toUpperCase();
+    // F4, H7, F1, G4, L4, F0, F3, F7, L0, L1, L5, G0, U5, W, WB, WL, MP1, etc.
+    if (family === 'F') {
+        if (m[2].startsWith('4')) return 'STM32F4';
+        if (m[2].startsWith('1')) return 'STM32F1';
+        if (m[2].startsWith('0')) return 'STM32F0';
+        if (m[2].startsWith('3')) return 'STM32F3';
+        if (m[2].startsWith('7')) return 'STM32F7';
+    }
+    if (family === 'H') return 'STM32H7';
+    if (family === 'G') {
+        if (m[2].startsWith('4')) return 'STM32G4';
+        if (m[2].startsWith('4')) return 'STM32G4';
+        if (m[2].startsWith('0')) return 'STM32G0';
+    }
+    if (family === 'L') {
+        if (m[2].startsWith('4')) return 'STM32L4';
+        if (m[2].startsWith('0')) return 'STM32L0';
+        if (m[2].startsWith('1')) return 'STM32L1';
+        if (m[2].startsWith('5')) return 'STM32L5';
+    }
+    if (family === 'U') return 'STM32U5';
+    if (family === 'W') return 'STM32W';
+    if (family === 'M') return 'STM32MP1';
+    return 'STM32' + family;
 }
     </script>
 </body>
