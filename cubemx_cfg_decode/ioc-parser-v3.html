@@ -55,6 +55,9 @@
                 background-color: rgba(156, 163, 175, 0.5);
                 border-radius: 3px;
             }
+            .fifo-group-error {
+                @apply border-red-300 bg-red-50;
+            }
         }
     </style>
 </head>
@@ -149,7 +152,7 @@
         <!-- 解析结果 -->
         <section id="results-section" class="hidden">
             <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <!-- 微控制器基本信息 -->
+                <!-- 微控制��基本信息 -->
                 <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-secondary/5">
                     <h2 class="text-2xl font-bold mb-4 flex items-center">
                         <i class="fa fa-microchip text-primary mr-3"></i>微控制器信息
@@ -323,7 +326,7 @@
         <!-- 直接引入生成工具的HTML结构 -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                <i class="fa fa-cogs text-primary mr-2"></i>robot_config.h初始化配置生成
+                <i class="fa fa-cogs text-primary mr-2"></i>robot_config.h初始化配置���成
             </h2>
             <!-- 文件操作区 -->
             <div class="mb-6 flex flex-wrap gap-4">
@@ -359,22 +362,11 @@
             </div>
             <!-- 新增：遥控器初始化配置 -->
             <div class="mb-8 border-b border-gray-200 pb-6">
-                <h3 class="font-medium text-gray-700 mb-4 text-lg">遥控器初始化配置选项</h3>
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">遥控器初始化配置选项 <span class="text-xs text-gray-400">（可不选择）</span></h3>
                 <div class="space-y-4">
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="rcNone" name="remoteType" value="none" checked
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
-                        </div>
-                        <div>
-                            <label for="rcNone" class="font-medium text-gray-800">不启用遥控器</label>
-                            <p class="text-sm text-gray-600 mt-1">不定义任何遥控器类型宏</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="rcDT7" name="remoteType" value="dt7"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="rcDT7" name="remoteType" value="dt7" class="remote-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="rcDT7" class="font-medium text-gray-800">大疆DT7</label>
@@ -383,8 +375,7 @@
                     </div>
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="rcI6X" name="remoteType" value="i6x"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="rcI6X" name="remoteType" value="i6x" class="remote-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="rcI6X" class="font-medium text-gray-800">富斯I6X</label>
@@ -393,24 +384,13 @@
                     </div>
                 </div>
             </div>
-            <!-- 底盘配置部分（替换为radio单选） -->
+            <!-- 底盘配置部分（可不选择） -->
             <div class="mb-8 border-b border-gray-200 pb-6">
-                <h3 class="font-medium text-gray-700 mb-4 text-lg">底盘初始化配置选项</h3>
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">底盘初始化配置选项 <span class="text-xs text-gray-400">（可不选择）</span></h3>
                 <div class="space-y-4">
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="noChassis" name="chassisType" value="none"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
-                        </div>
-                        <div>
-                            <label for="noChassis" class="font-medium text-gray-800">不启用底盘</label>
-                            <p class="text-sm text-gray-600 mt-1">不定义任何底盘类型宏</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="omniChassis" name="chassisType" value="omni"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="omniChassis" name="chassisType" value="omni" class="chassis-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="omniChassis" class="font-medium text-gray-800">全向轮底盘</label>
@@ -419,8 +399,7 @@
                     </div>
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="mecanumChassis" name="chassisType" value="mecanum"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="mecanumChassis" name="chassisType" value="mecanum" class="chassis-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="mecanumChassis" class="font-medium text-gray-800">麦克纳姆底盘</label>
@@ -429,8 +408,7 @@
                     </div>
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="swerveChassis" name="chassisType" value="swerve"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="swerveChassis" name="chassisType" value="swerve" class="chassis-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="swerveChassis" class="font-medium text-gray-800">舵轮底盘</label>
@@ -439,8 +417,7 @@
                     </div>
                     <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div class="flex items-center mt-1 mr-3">
-                            <input type="radio" id="balanceChassis" name="chassisType" value="balance"
-                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <input type="checkbox" id="balanceChassis" name="chassisType" value="balance" class="chassis-choice w-4 h-4 text-primary focus:ring-primary border-gray-300">
                         </div>
                         <div>
                             <label for="balanceChassis" class="font-medium text-gray-800">平衡底盘</label>
@@ -454,7 +431,7 @@
             <div class="mb-6">
                 <h3 class="font-medium text-gray-700 mb-4 text-lg">CAN 初始化配置选项</h3>
                 <div class="space-y-4">
-                    <!-- CAN类型选择（只读，不可交互） -->
+                    <!-- CAN类���选择（只读，不可交互） -->
                     <div>
                         <label class="block text-sm font-medium text-gray-600 mb-2">CAN类型 <span class="text-xs text-gray-400">（由IOC文件自动决定，无法手动更改）</span></label>
                         <div class="flex gap-2">
@@ -467,34 +444,23 @@
                         </div>
                     </div>
 
-                    <!-- CAN总线选择 -->
+                    <!-- CAN总线选择 (保持占位, 仍按解析自动高亮, 不允许手动) -->
                     <div id="canBusSection" class="hidden">
                         <label class="block text-sm font-medium text-gray-600 mb-2">CAN总线</label>
                         <div class="flex gap-2">
-                            <button id="canBus1" class="can-bus-btn bg-primary text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
-                                CAN1
-                            </button>
-                            <button id="canBus2" class="can-bus-btn bg-gray-100 text-gray-700 rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">
-                                CAN2
-                            </button>
+                            <button id="canBus1" class="can-bus-btn bg-primary text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">CAN1</button>
+                            <button id="canBus2" class="can-bus-btn bg-gray-100 text-gray-700 rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">CAN2</button>
+                            <button id="canBus3" class="can-bus-btn bg-gray-100 text-gray-700 rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-all duration-200">CAN3</button>
                         </div>
                     </div>
 
-                    <!-- FIFO配置 -->
+                    <!-- FIFO配置：改为按截图动态生成 CANx FIFO0 / FIFO1 复选框 -->
                     <div id="fifoConfigSection" class="hidden">
-                        <label class="block text-sm font-medium text-gray-600 mb-2">FIFO配置</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="txFifoSize" class="block text-sm font-medium text-gray-600 mb-1">TX FIFO大小</label>
-                                <input type="number" id="txFifoSize" value="10"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
-                            </div>
-                            <div>
-                                <label for="rxFifoSize" class="block text-sm font-medium text-gray-600 mb-1">RX FIFO大小</label>
-                                <input type="number" id="rxFifoSize" value="10"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
-                            </div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-600">FIFO配置</label>
+                            <span class="text-xs text-gray-400">每个已启用 CAN 至少选择一个 FIFO</span>
                         </div>
+                        <div id="fifoGroups" class="space-y-4"></div>
                     </div>
                 </div>
             </div>
@@ -544,7 +510,7 @@
                 <ol class="list-decimal pl-5 text-gray-600 mb-4 space-y-2">
                     <li>点击"选择IOC文件"按钮，或直接将IOC文件拖放到上传区域</li>
                     <li>上传完成后，点击"解析文件"按钮</li>
-                    <li>查看解析结果，点击各部分标题可展开/折叠内容</li>
+                    <li>查看解析结果，点击各部分标题可展���/折叠内容</li>
                 </ol>
 
                 <h4 class="font-semibold text-lg mb-3">支持的信息</h4>
@@ -926,7 +892,7 @@
             result.peripherals.can = Array.from(canSet);
             result.peripherals.i2c = Array.from(i2cSet);
             result.peripherals.fdcanFifo = fdcanFifo; // 新增: FDCAN FIFO配置
-            // 验证是否解析到了基本信息
+            // 验证���否解析到了基本信息
             if (!result.mcu.model) {
                 throw new Error('无法识别微控制器型号，请确保上传的是有效的IOC文件（CubeMX 6.x版本生成）');
             }
@@ -1166,193 +1132,254 @@
         // 包括：generateHeaderFile, copyToClipboard, downloadHeaderFile, updateCanUI, updateFifoVisibility, validateFifoSelection, showFifoWarning, resetToDefault, handleFileUpload, parseHeaderFile, fixFifoSelection, showLoadSuccessNotification
 
         // 监听遥控器类型选择变化，实时更新预览
-document.querySelectorAll('input[name="remoteType"]').forEach(radio => {
-    radio.addEventListener('change', generateHeaderFile);
+document.querySelectorAll('input[name="remoteType"]').forEach(el => {
+    el.addEventListener('change', () => {
+        if (el.checked) {
+            document.querySelectorAll('input[name="remoteType"]').forEach(o=>{ if(o!==el) o.checked=false; });
+        }
+        generateHeaderFile();
+    });
 });
-
 // 监听底盘类型选择变化，实时更新预览
-document.querySelectorAll('input[name="chassisType"]').forEach(radio => {
-    radio.addEventListener('change', generateHeaderFile);
+document.querySelectorAll('input[name="chassisType"]').forEach(el => {
+    el.addEventListener('change', () => {
+        if (el.checked) {
+            document.querySelectorAll('input[name="chassisType"]').forEach(o=>{ if(o!==el) o.checked=false; });
+        }
+        generateHeaderFile();
+    });
 });
 
-// 生成头文件内容（增加遥控器部分）
-function generateHeaderFile() {
-    // ...existing code...
-    // 获取选中的遥控器类型
-    const selectedRemote = document.querySelector('input[name="remoteType"]:checked')?.value || 'none';
-    // 获取选中的底盘类型
-    const selectedChassis = document.querySelector('input[name="chassisType"]:checked')?.value || 'none';
+// 移除旧版 generateHeaderFile / generateHeaderFileFromIoc （如仍存在旧调用则安全返回）
+if (typeof generateHeaderFileFromIoc === 'function') {
+    generateHeaderFileFromIoc = function(){};
+}
+if (typeof generateHeaderFile === 'function') {
+    // 不处理，后面新版会覆盖
+}
+// ===== 新版逻辑开始 =====
+// 保存最近一次解析的数据
+let lastParsedData = null;
+// CAN FIFO 选择结构 { CAN1:{FIFO0:true,FIFO1:false}, ... }
+let canFifoSelection = {};
 
-    // ...头文件保护...
-    let code = '';
-    // ...existing code...
-
-    // 遥控器配置
-    code += `/* 遥控器初始化配置选项 */\n`;
-    code += `// 选择遥控器类型\n`;
-    if (selectedRemote === 'dt7') {
-        code += `#define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
-        code += `// #define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
-    } else if (selectedRemote === 'i6x') {
-        code += `// #define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
-        code += `#define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
-    } else { // 不启用
-        code += `// 未启用任何遥控器类型\n`;
-        code += `// #define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
-        code += `// #define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
-    }
-    code += `\n`;
-
-    // 底盘配置
-    code += `/* 底盘初始化配置选项 */\n`;
-    code += `// 选择底盘类型\n`;
-    if (selectedChassis === 'omni') {
-        code += `#define USER_OMNI // 全向轮底盘\n`;
-        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
-        code += `// #define USER_SWERVE // 舵轮底盘\n`;
-        code += `// #define USER_BALANCE // 平衡底盘\n`;
-    } else if (selectedChassis === 'mecanum') {
-        code += `// #define USER_OMNI // 全向轮底盘\n`;
-        code += `#define USER_MECANUM // 麦克纳姆底盘\n`;
-        code += `// #define USER_SWERVE // 舵轮底盘\n`;
-        code += `// #define USER_BALANCE // 平衡底盘\n`;
-    } else if (selectedChassis === 'swerve') {
-        code += `// #define USER_OMNI // 全向轮底盘\n`;
-        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
-        code += `#define USER_SWERVE // 舵轮底盘\n`;
-        code += `// #define USER_BALANCE // 平衡底盘\n`;
-    } else if (selectedChassis === 'balance') {
-        code += `// #define USER_OMNI // 全向轮底盘\n`;
-        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
-        code += `#define USER_BALANCE // 平衡底盘\n`;
-    } else { // 不启用底盘
-        code += `// 未启用任何底盘类型\n`;
-        code += `// #define USER_OMNI // 全向轮底盘\n`;
-        code += `// #define USER_MECANUM // 麦克纳姆底盘\n`;
-        code += `// #define USER_SWERVE // 舵轮底盘\n`;
-        code += `// #define USER_BALANCE // 平衡底盘\n`;
-    }
-    // ...existing code...
-    // 更新预览
-    document.getElementById('codePreview').textContent = code;
+// 从解析结果提取已启用 CAN/FDCAN 的总线号
+function getActiveCanBusNumbers() {
+    if (!lastParsedData || !lastParsedData.peripherals || !Array.isArray(lastParsedData.peripherals.can)) return [];
+    const nums = [];
+    lastParsedData.peripherals.can.forEach(n => {
+        if (!n) return;
+        const m = n.match(/(FD)?CAN(\d+)/i);
+        if (m) {
+            const num = parseInt(m[2]);
+            if (!nums.includes(num)) nums.push(num);
+        }
+    });
+    nums.sort((a,b)=>a-b);
+    return nums;
 }
 
-// 新增：根据解析结果自动生成头文件预览（CAN配置自动填充）
-function generateHeaderFileFromIoc(data) {
-    // 获取文件名和保护宏
-    const fileName = document.getElementById('fileName')?.value?.trim() || 'robot_config';
-    const guardName = document.getElementById('guardName')?.value?.trim() || fileName.toUpperCase() + '_H';
-
-    let code = '';
-    code += `#ifndef ${guardName}\n#define ${guardName}\n\n`;
-
-    // 底盘配置（��持原有逻辑）
-    // ...existing code for chassis...
-
-    // CAN配置自动填充
-    code += `/* CAN 初始化配置选项 */\n\n`;
-
-    // 选择 CAN 类型
-    let canTypeFD = false, canTypeStandard = false;
-    if (data.peripherals.can.length > 0) {
-        canTypeFD = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('FDCAN'));
-        canTypeStandard = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('CAN'));
+// 渲染 FIFO 选择 UI
+function renderCanFifoUI() {
+    const fifoSection = document.getElementById('fifoConfigSection');
+    const container = document.getElementById('fifoGroups');
+    if (!fifoSection || !container) return;
+    const buses = getActiveCanBusNumbers();
+    if (buses.length === 0) {
+        fifoSection.classList.add('hidden');
+        canFifoSelection = {};
+        generateHeaderFile();
+        return;
     }
-    if (canTypeFD) {
-        code += `#define USER_CAN_FD //FDCAN\n`;
-        code += `// #define USER_CAN_STANDARD //CAN\n\n`;
-    } else if (canTypeStandard) {
-        code += `// #define USER_CAN_FD //FDCAN\n`;
-        code += `#define USER_CAN_STANDARD //CAN\n\n`;
-    } else {
-        code += `// #define USER_CAN_FD //FDCAN\n`;
-        code += `// #define USER_CAN_STANDARD //CAN\n\n`;
-    }
+    fifoSection.classList.remove('hidden');
+    container.innerHTML = '';
+    // 初始化选择：默认 FIFO0 选中, FIFO1 关闭
+    canFifoSelection = {};
+    buses.forEach((num, idx) => {
+        const canName = `CAN${num}`;
+        if (!canFifoSelection[canName]) canFifoSelection[canName] = { FIFO0: true, FIFO1: false };
+        const sel = canFifoSelection[canName];
+        const group = document.createElement('div');
+        group.className = 'fifo-group p-4 rounded-lg border bg-gray-50 transition-colors';
+        group.dataset.can = canName;
+        group.innerHTML = `
+            <div class="text-sm font-medium mb-3">${canName} FIFO选择 <span class="text-xs text-gray-500">(至少选择一个)</span></div>
+            <label class="inline-flex items-center mr-6 cursor-pointer select-none">
+                <input type="checkbox" class="can-fifo-checkbox h-4 w-4 text-primary border-gray-300 rounded" data-can="${canName}" data-fifo="FIFO0" ${sel.FIFO0?'checked':''}>
+                <span class="ml-2 text-sm font-medium">FIFO0</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer select-none">
+                <input type="checkbox" class="can-fifo-checkbox h-4 w-4 text-primary border-gray-300 rounded" data-can="${canName}" data-fifo="FIFO1" ${sel.FIFO1?'checked':''}>
+                <span class="ml-2 text-sm font-medium">FIFO1</span>
+            </label>`;
+        container.appendChild(group);
+    });
+    bindFifoCheckboxEvents();
+    updateAllFifoValidation();
+    generateHeaderFile();
+}
 
-    // 选择 CAN 总线
-    let canBusArr = [];
-    if (data.peripherals.can.length > 0) {
-        data.peripherals.can.forEach(c => {
-            if (c) {
-                let idx = c.match(/\d+/);
-                if (idx) canBusArr.push(idx[0]);
-            }
+function bindFifoCheckboxEvents() {
+    document.querySelectorAll('.can-fifo-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const can = cb.dataset.can;
+            const fifo = cb.dataset.fifo;
+            canFifoSelection[can][fifo] = cb.checked;
+            validateSingleCan(can);
+            generateHeaderFile();
         });
-    }
-    for (let i = 1; i <= 3; i++) {
-        if (canBusArr.includes(i.toString())) {
-            code += `#define USER_CAN${i}\n`;
-        } else {
-            code += `// #define USER_CAN${i}\n`;
-        }
-    }
-    code += `\n`;
-
-    // 选择 CAN FIFO
-    // 新增: FDCAN自动填充FIFO，标准CAN默认全开
-    if (canTypeFD && data.peripherals.fdcanFifo) {
-        // FDCAN: 按照fdcanFifo配置
-        for (let i = 1; i <= 3; i++) {
-            const fdcanName = `FDCAN${i}`;
-            const fifo = data.peripherals.fdcanFifo[fdcanName];
-            if (canBusArr.includes(i.toString())) {
-                if (fifo && fifo.FIFO0 > 0) {
-                    code += `#define USER_CAN${i}_FIFO_0\n`;
-                } else {
-                    code += `// #define USER_CAN${i}_FIFO_0\n`;
-                }
-                if (fifo && fifo.FIFO1 > 0) {
-                    code += `#define USER_CAN${i}_FIFO_1\n`;
-                } else {
-                    code += `// #define USER_CAN${i}_FIFO_1\n`;
-                }
-            } else {
-                code += `// #define USER_CAN${i}_FIFO_0\n`;
-                code += `// #define USER_CAN${i}_FIFO_1\n`;
-            }
-        }
-    } else {
-        // 标准CAN: 默认全开（至少一个FIFO被define）
-        for (let i = 1; i <= 3; i++) {
-            if (canBusArr.includes(i.toString())) {
-                code += `#define USER_CAN${i}_FIFO_0\n`;
-                code += `#define USER_CAN${i}_FIFO_1\n`;
-            } else {
-                code += `// #define USER_CAN${i}_FIFO_0\n`;
-                code += `// #define USER_CAN${i}_FIFO_1\n`;
-            }
-        }
-    }
-
-    code += `\n#endif // ${guardName}\n`;
-
-    // 更新预览
-    document.getElementById('codePreview').textContent = code;
+    });
 }
 
-        // ========== CAN类型按钮联动逻辑 ========== //
-        // 只读模式：移除所有点击事件绑定，仅由displayResults自动设置高亮
-        function setCanType(type) {
-            const canTypeStandardSpan = document.getElementById('canTypeStandard');
-            const canTypeFDSpan = document.getElementById('canTypeFD');
-            if (!canTypeStandardSpan || !canTypeFDSpan) return;
-            if (type === 'fd') {
-                canTypeFDSpan.classList.remove('bg-gray-100', 'text-gray-700', 'opacity-60');
-                canTypeFDSpan.classList.add('bg-primary', 'text-white', 'opacity-100');
-                canTypeFDSpan.querySelector('i').className = 'fa fa-dot-circle-o';
-                canTypeStandardSpan.classList.remove('bg-primary', 'text-white', 'opacity-100');
-                canTypeStandardSpan.classList.add('bg-gray-100', 'text-gray-700', 'opacity-60');
-                canTypeStandardSpan.querySelector('i').className = 'fa fa-circle-o';
-            } else {
-                canTypeStandardSpan.classList.remove('bg-gray-100', 'text-gray-700', 'opacity-60');
-                canTypeStandardSpan.classList.add('bg-primary', 'text-white', 'opacity-100');
-                canTypeStandardSpan.querySelector('i').className = 'fa fa-dot-circle-o';
-                canTypeFDSpan.classList.remove('bg-primary', 'text-white', 'opacity-100');
-                canTypeFDSpan.classList.add('bg-gray-100', 'text-gray-700', 'opacity-60');
-                canTypeFDSpan.querySelector('i').className = 'fa fa-circle-o';
-            }
-        }
+function validateSingleCan(canName) {
+    const group = document.querySelector(`.fifo-group[data-can="${canName}"]`);
+    if (!group) return true;
+    const s = canFifoSelection[canName];
+    const ok = (s.FIFO0 || s.FIFO1);
+    if (!ok) group.classList.add('fifo-group-error'); else group.classList.remove('fifo-group-error');
+    return ok;
+}
+function updateAllFifoValidation() {
+    let valid = true;
+    Object.keys(canFifoSelection).forEach(k => { if (!validateSingleCan(k)) valid = false; });
+    const copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) copyBtn.disabled = !valid;
+    const warn = document.getElementById('fifoWarning');
+    if (warn) warn.style.opacity = valid ? 0 : 1;
+    return valid;
+}
 
+// 根据解析结果设置 CAN 类型视觉状态
+function setCanType(type) {
+    const stdEl = document.getElementById('canTypeStandard');
+    const fdEl = document.getElementById('canTypeFD');
+    if (!stdEl || !fdEl) return;
+    if (type === 'fd') {
+        fdEl.classList.remove('bg-gray-100','text-gray-700','opacity-60');
+        fdEl.classList.add('bg-primary','text-white','opacity-100');
+        fdEl.querySelector('i').className = 'fa fa-dot-circle-o';
+        stdEl.classList.add('bg-gray-100','text-gray-700','opacity-60');
+        stdEl.classList.remove('bg-primary','text-white','opacity-100');
+        stdEl.querySelector('i').className = 'fa fa-circle-o';
+    } else if (type === 'standard') {
+        stdEl.classList.remove('bg-gray-100','text-gray-700','opacity-60');
+        stdEl.classList.add('bg-primary','text-white','opacity-100');
+        stdEl.querySelector('i').className = 'fa fa-dot-circle-o';
+        fdEl.classList.add('bg-gray-100','text-gray-700','opacity-60');
+        fdEl.classList.remove('bg-primary','text-white','opacity-100');
+        fdEl.querySelector('i').className = 'fa fa-circle-o';
+    }
+}
+// 新增: 清除 CAN 类型（无外设）
+function clearCanType(){
+    const stdEl = document.getElementById('canTypeStandard');
+    const fdEl = document.getElementById('canTypeFD');
+    if(!stdEl||!fdEl) return;
+    [stdEl,fdEl].forEach(el=>{
+        el.classList.remove('bg-primary','text-white','opacity-100');
+        if(!el.classList.contains('bg-gray-100')) el.classList.add('bg-gray-100');
+        if(!el.classList.contains('text-gray-700')) el.classList.add('text-gray-700');
+        if(!el.classList.contains('opacity-60')) el.classList.add('opacity-60');
+        const icon = el.querySelector('i');
+        if(icon) icon.className='fa fa-circle-o';
+    });
+}
+
+// 重写 displayResults 在末尾附加 FIFO 渲染
+const __origDisplayResults = displayResults;
+displayResults = function(data){
+    __origDisplayResults(data);
+    lastParsedData = data;
+    const hasFD = data.peripherals.can.some(n=> n && n.toUpperCase().includes('FDCAN'));
+    const hasSTD = data.peripherals.can.some(n=> n && n.toUpperCase().includes('CAN') && !n.toUpperCase().includes('FDCAN'));
+    if (hasFD) {
+        setCanType('fd');
+    } else if (hasSTD) {
+        setCanType('standard');
+    } else {
+        clearCanType();
+        canFifoSelection = {};
+        const fifoSection = document.getElementById('fifoConfigSection');
+        if (fifoSection) fifoSection.classList.add('hidden');
+        generateHeaderFile();
+        return;
+    }
+    renderCanFifoUI();
+};
+
+// 统一生成头文件
+function generateHeaderFile(){
+    const fileBase = document.getElementById('fileName')?.value?.trim() || 'robot_config';
+    const guard = document.getElementById('guardName')?.value?.trim() || (fileBase.toUpperCase() + '_H');
+    // 读取互斥复选框（可能全空）
+    let remote = 'none';
+    document.querySelectorAll('.remote-choice').forEach(cb=>{ if(cb.checked) remote = cb.value; });
+    let chassis = 'none';
+    document.querySelectorAll('.chassis-choice').forEach(cb=>{ if(cb.checked) chassis = cb.value; });
+    const buses = getActiveCanBusNumbers();
+    const hasFD = lastParsedData?.peripherals?.can?.some(n=> n && n.toUpperCase().includes('FDCAN')) || false;
+    const hasSTD = lastParsedData?.peripherals?.can?.some(n=> n && n.toUpperCase().includes('CAN') && !n.toUpperCase().includes('FDCAN')) || false;
+
+    let code = '';
+    code += `#ifndef ${guard}\n#define ${guard}\n\n`;
+    // 遥控器
+    code += '/* 遥控器初始化配置选项 */\n';
+    if (remote==='dt7') {
+        code += '#define USER_REMOTE_DJI_DT7\n// #define USER_REMOTE_FLYSKY_I6X\n';
+    } else if (remote==='i6x') {
+        code += '// #define USER_REMOTE_DJI_DT7\n#define USER_REMOTE_FLYSKY_I6X\n';
+    } else {
+        code += '// #define USER_REMOTE_DJI_DT7\n// #define USER_REMOTE_FLYSKY_I6X\n';
+    }
+    code += '\n';
+    // 底盘
+    code += '/* 底盘初始化配置选项 */\n';
+    code += (chassis==='omni')? '#define USER_OMNI\n' : '// #define USER_OMNI\n';
+    code += (chassis==='mecanum')? '#define USER_MECANUM\n' : '// #define USER_MECANUM\n';
+    code += (chassis==='swerve')? '#define USER_SWERVE\n' : '// #define USER_SWERVE\n';
+    code += (chassis==='balance')? '#define USER_BALANCE\n' : '// #define USER_BALANCE\n';
+    code += '\n';
+    // CAN 类型
+    code += '/* CAN 类型 */\n';
+    code += hasFD ? '#define USER_CAN_FD\n' : '// #define USER_CAN_FD\n';
+    code += (!hasFD && hasSTD) ? '#define USER_CAN_STANDARD\n' : '// #define USER_CAN_STANDARD\n';
+    code += '\n/* CAN 总线启用 */\n';
+    for (let i=1;i<=3;i++){ code += buses.includes(i)? `#define USER_CAN${i}\n` : `// #define USER_CAN${i}\n`; }
+    code += '\n/* CAN FIFO 选择 */\n';
+    Object.keys(canFifoSelection).forEach(can=>{
+        const sel = canFifoSelection[can];
+        code += (sel.FIFO0?`#define USER_${can}_FIFO_0\n`:`// #define USER_${can}_FIFO_0\n`);
+        code += (sel.FIFO1?`#define USER_${can}_FIFO_1\n`:`// #define USER_${can}_FIFO_1\n`);
+    });
+    code += '\n#endif /* ' + guard + ' */\n';
+
+    document.getElementById('codePreview').textContent = code;
+    updateAllFifoValidation();
+}
+
+// 复制到剪贴板函数
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // 显示复制成功提示
+        const notification = document.getElementById('copyNotification');
+        notification.style.opacity = 1;
+        setTimeout(() => {
+            notification.style.opacity = 0;
+        }, 2000);
+    }, (err) => {
+        console.error('复制失败:', err);
+    });
+}
+
+// 复制按钮点击事件
+document.getElementById('copyBtn').addEventListener('click', () => {
+    const codePreview = document.getElementById('codePreview');
+    const code = codePreview.textContent.trim();
+    if (!code) return;
+    copyToClipboard(code);
+});
+
+// FIFO 配置相关逻辑已在上方整合，无需重复定义
     </script>
 </body>
 </html>
