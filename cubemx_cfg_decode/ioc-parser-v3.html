@@ -346,13 +346,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="fileName" class="block text-sm font-medium text-gray-600 mb-1">文件名</label>
-                        <input type="text" id="fileName" value="user_configuration"
+                        <input type="text" id="fileName" value="robot_config"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
                         <p class="text-xs text-gray-500 mt-1">不需要包含.h扩展名</p>
                     </div>
                     <div>
                         <label for="guardName" class="block text-sm font-medium text-gray-600 mb-1">头文件保护宏</label>
-                        <input type="text" id="guardName" value="USER_CONFIGURATION_H"
+                        <input type="text" id="guardName" value="ROBOT_CONFIG_H"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
                     </div>
                 </div>
@@ -449,7 +449,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- CAN配置部分 -->
             <div class="mb-6">
                 <h3 class="font-medium text-gray-700 mb-4 text-lg">CAN 初始化配置选项</h3>
@@ -466,7 +466,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- CAN总线选择 -->
                     <div id="canBusSection" class="hidden">
                         <label class="block text-sm font-medium text-gray-600 mb-2">CAN总线</label>
@@ -479,7 +479,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- FIFO配置 -->
                     <div id="fifoConfigSection" class="hidden">
                         <label class="block text-sm font-medium text-gray-600 mb-2">FIFO配置</label>
@@ -505,7 +505,7 @@
                 <i class="fa fa-eye text-primary mr-2"></i>预览
             </h2>
             <div class="mb-4 flex justify-between items-center">
-                <div class="text-sm text-gray-500" id="previewFileName">user_configuration.h</div>
+                <div class="text-sm text-gray-500" id="previewFileName">robot_config.h</div>
                 <button id="copyBtn" class="text-primary hover:text-primary/80 text-sm flex items-center transition-colors">
                     <i class="fa fa-copy mr-1"></i>复制代码
                 </button>
@@ -539,14 +539,14 @@
             <div class="p-6">
                 <h4 class="font-semibold text-lg mb-3">什么是IOC文件？</h4>
                 <p class="text-gray-600 mb-4">IOC文件是STM32CubeMX软件生成的配置文件，包含了微控制器的所有硬件配置信息，如引脚分配、外设配置、时钟设置等。</p>
-                
+
                 <h4 class="font-semibold text-lg mb-3">如何使用此工具？</h4>
                 <ol class="list-decimal pl-5 text-gray-600 mb-4 space-y-2">
                     <li>点击"选择IOC文件"按钮，或直接将IOC文件拖放到上传区域</li>
                     <li>上传完成后，点击"解析文件"按钮</li>
                     <li>查看解析结果，点击各部分标题可展开/折叠内容</li>
                 </ol>
-                
+
                 <h4 class="font-semibold text-lg mb-3">支持的信息</h4>
                 <p class="text-gray-600">此工具可以解析并展示以下信息：</p>
                 <ul class="list-disc pl-5 text-gray-600 space-y-1">
@@ -577,20 +577,20 @@
                     <h4 class="text-xl font-bold">HDU-PHOENIX配置初始化器</h4>
                     <p class="text-gray-500 mt-2">专业解析STM32CubeMX配置文件</p>
                 </div>
-                
+
                 <div class="space-y-4">
                     <div>
                         <h5 class="font-semibold">版本信息</h5>
                         <p class="text-gray-600 text-sm">当前版本: 3.0</p>
                         <p class="text-gray-600 text-sm">适配CubeMX版本: 6.x全系列</p>
                     </div>
-                    
+
                     <div>
                         <h5 class="font-semibold">联系方式</h5>
                         <p class="text-gray-600 text-sm">开发者: Your Name</p>
                         <p class="text-gray-600 text-sm">邮箱: yourname@example.com</p>
                     </div>
-                    
+
                     <div>
                         <h5 class="font-semibold">致谢</h5>
                         <p class="text-gray-600 text-sm">特别感谢 STM32CubeMX 团队提供的强大工具</p>
@@ -621,73 +621,73 @@
         const aboutModal = document.getElementById('about-modal');
         const closeAbout = document.getElementById('close-about');
         const themeToggle = document.getElementById('theme-toggle');
-        
+
         // 存储上传的文件
         let uploadedFile = null;
-        
+
         // 文件上传处理
         fileInput.addEventListener('change', handleFileSelect);
-        
+
         // 拖放功能
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             uploadContainer.addEventListener(eventName, preventDefaults, false);
         });
-        
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         ['dragenter', 'dragover'].forEach(eventName => {
             uploadContainer.addEventListener(eventName, highlight, false);
         });
-        
+
         ['dragleave', 'drop'].forEach(eventName => {
             uploadContainer.addEventListener(eventName, unhighlight, false);
         });
-        
+
         function highlight() {
             uploadContainer.classList.add('border-primary');
             uploadContainer.classList.add('bg-primary/5');
         }
-        
+
         function unhighlight() {
             uploadContainer.classList.remove('border-primary');
             uploadContainer.classList.remove('bg-primary/5');
         }
-        
+
         uploadContainer.addEventListener('drop', handleDrop, false);
-        
+
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const file = dt.files[0];
-            
+
             if (file) {
                 handleFile(file);
             }
         }
-        
+
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
                 handleFile(file);
             }
         }
-        
+
         function handleFile(file) {
             // 检查文件类型
             if (!file.name.endsWith('.ioc')) {
                 showError('请上传扩展名为.ioc的文件');
                 return;
             }
-            
+
             uploadedFile = file;
-            
+
             // 显示文件信息
             fileName.textContent = file.name;
             fileSize.textContent = formatFileSize(file.size);
             fileInfo.classList.remove('hidden');
-            
+
             // 尝试预览文件内容以检测CubeMX版本
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -699,14 +699,14 @@
                 }
             };
             reader.readAsText(file.slice(0, 1024)); // 只读取前1KB内容
-            
+
             // 启用解析按钮
             parseBtn.disabled = false;
-            
+
             // 隐藏错误信息
             errorSection.classList.add('hidden');
         }
-        
+
         // 移除文件
         removeFile.addEventListener('click', () => {
             uploadedFile = null;
@@ -716,31 +716,31 @@
             parseBtn.disabled = true;
             resultsSection.classList.add('hidden');
         });
-        
+
         // 解析文件
         parseBtn.addEventListener('click', () => {
             if (!uploadedFile) return;
-            
+
             // 显示加载状态
             loadingSection.classList.remove('hidden');
             resultsSection.classList.add('hidden');
             errorSection.classList.add('hidden');
-            
+
             const reader = new FileReader();
-            
+
             reader.onload = function(e) {
                 try {
                     const content = e.target.result;
                     const parsedData = parseIocFile(content);
                     displayResults(parsedData);
-                    
+
                     // 隐藏加载状态，显示结果
                     loadingSection.classList.add('hidden');
                     resultsSection.classList.remove('hidden');
-                    
+
                     // 自动展开第一个 section
                     document.querySelector('.section-toggle').click();
-                    
+
                     // 滚动到结果部分
                     resultsSection.scrollIntoView({ behavior: 'smooth' });
                 } catch (error) {
@@ -749,21 +749,21 @@
                     console.error('解析错误:', error);
                 }
             };
-            
+
             reader.onerror = function() {
                 loadingSection.classList.add('hidden');
                 showError('无法读取文件，请尝试其他文件');
             };
-            
+
             reader.readAsText(uploadedFile);
         });
-        
+
         // 显示错误信息
         function showError(message) {
             errorMessage.textContent = message;
             errorSection.classList.remove('hidden');
         }
-        
+
         // 解析IOC文件内容 - 针对CubeMX 6.x版本优化
         function parseIocFile(content) {
             const lines = content.split('\n');
@@ -917,7 +917,7 @@
             }
             return result;
         }
-        
+
         // 显示解析结果
         function displayResults(data) {
             // 微控制器信息
@@ -925,7 +925,7 @@
             document.getElementById('mcu-package').textContent = data.mcu.package || '未指定';
             document.getElementById('cubemx-version').textContent = data.mcu.cubemxVersion || '未指定';
             document.getElementById('firmware-version').textContent = data.mcu.firmwareVersion || '未指定';
-            
+
             // 时钟配置
             // HSE显示为MHz
             document.getElementById('hse').textContent = data.clock.hse
@@ -936,7 +936,7 @@
             document.getElementById('hclk').textContent = data.clock.hclk || '未配置';
             document.getElementById('pclk1').textContent = data.clock.pclk1 || '未配置';
             document.getElementById('pclk2').textContent = data.clock.pclk2 || '未配置';
-            
+
             // SPI配置
             const spiConfig = document.getElementById('spi-config');
             spiConfig.innerHTML = '';
@@ -945,7 +945,7 @@
             } else {
                 spiConfig.innerHTML = '<p class="text-gray-500 italic">未启用SPI外设</p>';
             }
-            
+
             // UART配置
             const uartConfig = document.getElementById('uart-config');
             uartConfig.innerHTML = '';
@@ -972,11 +972,11 @@
             } else {
                 canConfig.innerHTML = '<p class="text-gray-500 italic">未启用CAN/FDCAN外设</p>';
             }
-            
+
             // GPIO配置
             const gpioConfig = document.getElementById('gpio-config');
             gpioConfig.innerHTML = '';
-            
+
             if (data.gpio.length > 0) {
                 data.gpio.forEach(pin => {
                     const row = document.createElement('tr');
@@ -994,7 +994,7 @@
                 row.innerHTML = '<td colspan="4" class="py-4 px-4 text-center text-gray-500">未配置任何引脚功能</td>';
                 gpioConfig.appendChild(row);
             }
-            
+
             // 项目配置
             document.getElementById('project-name').textContent = data.project.name || '未指定';
             document.getElementById('toolchain').textContent = data.project.toolchain || '未指定';
@@ -1004,23 +1004,16 @@
             // 自动填充 CAN 选项（底盘可按需扩展）
             try {
                 // CAN类型自动填充
-                const canTypeFD = document.getElementById('canTypeFD');
-                const canTypeStandard = document.getElementById('canTypeStandard');
+                let hasFDCAN = false, hasCAN = false;
                 if (data.peripherals.can.length > 0) {
-                    // 判断是否有FDCAN或CAN
-                    const hasFDCAN = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('FDCAN'));
-                    const hasCAN = data.peripherals.can.some(c => c.name && c.name.toUpperCase().includes('CAN'));
-                    if (hasFDCAN) {
-                        canTypeFD.classList.remove('bg-gray-100', 'text-gray-700');
-                        canTypeFD.classList.add('bg-primary', 'text-white');
-                        canTypeStandard.classList.remove('bg-primary', 'text-white');
-                        canTypeStandard.classList.add('bg-gray-100', 'text-gray-700');
-                    } else if (hasCAN) {
-                        canTypeStandard.classList.remove('bg-gray-100', 'text-gray-700');
-                        canTypeStandard.classList.add('bg-primary', 'text-white');
-                        canTypeFD.classList.remove('bg-primary', 'text-white');
-                        canTypeFD.classList.add('bg-gray-100', 'text-gray-700');
-                    }
+                    hasFDCAN = data.peripherals.can.some(name => name && name.toUpperCase().includes('FDCAN'));
+                    hasCAN = data.peripherals.can.some(name => name && name.toUpperCase().includes('CAN') && !name.toUpperCase().includes('FDCAN'));
+                }
+                // 自动切换按钮（调用setCanType而不是click）
+                if (hasFDCAN) {
+                    setCanType('fd');
+                } else if (hasCAN) {
+                    setCanType('standard');
                 }
 
                 // CAN总线自动填充
@@ -1055,7 +1048,7 @@
                 // 忽略填充异常
             }
         }
-        
+
         // 辅助函数：格式化文件大小
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -1064,7 +1057,7 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
-        
+
         // 辅助函数：格式化频率
         function formatFrequency(hertz) {
             const hz = parseInt(hertz);
@@ -1086,44 +1079,44 @@
             if (isNaN(hz)) return hseStr;
             return (hz / 1e6).toFixed(2) + ' MHz';
         }
-        
+
         // 帮助模态框控制
         helpBtn.addEventListener('click', () => {
             helpModal.classList.remove('hidden');
         });
-        
+
         closeHelp.addEventListener('click', () => {
             helpModal.classList.add('hidden');
         });
-        
+
         helpModal.addEventListener('click', (e) => {
             if (e.target === helpModal) {
                 helpModal.classList.add('hidden');
             }
         });
-        
+
         // 关于模态框控制
         aboutBtn.addEventListener('click', () => {
             aboutModal.classList.remove('hidden');
         });
-        
+
         closeAbout.addEventListener('click', () => {
             aboutModal.classList.add('hidden');
         });
-        
+
         aboutModal.addEventListener('click', (e) => {
             if (e.target === aboutModal) {
                 aboutModal.classList.add('hidden');
             }
         });
-        
+
         // 折叠/展开部分
         document.querySelectorAll('.section-toggle').forEach(toggle => {
             toggle.addEventListener('click', () => {
                 const targetId = toggle.getAttribute('data-target');
                 const target = document.getElementById(targetId);
                 const icon = toggle.querySelector('i.fa-chevron-down');
-                
+
                 // 切换展开/折叠状态
                 if (target.classList.contains('section-transition')) {
                     target.classList.remove('section-transition');
@@ -1136,14 +1129,14 @@
                 }
             });
         });
-        
+
         // 深色模式切换
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('bg-gray-900');
             document.body.classList.toggle('text-white');
             document.body.classList.toggle('bg-gray-50');
             document.body.classList.toggle('text-dark');
-            
+
             const icon = themeToggle.querySelector('i');
             if (icon.classList.contains('fa-moon-o')) {
                 icon.classList.remove('fa-moon-o');
@@ -1232,7 +1225,7 @@ function generateHeaderFile() {
 // 新增：根据解析结果自动生成头文件预览（CAN配置自动填充）
 function generateHeaderFileFromIoc(data) {
     // 获取文件名和保护宏
-    const fileName = document.getElementById('fileName')?.value?.trim() || 'user_configuration';
+    const fileName = document.getElementById('fileName')?.value?.trim() || 'robot_config';
     const guardName = document.getElementById('guardName')?.value?.trim() || fileName.toUpperCase() + '_H';
 
     let code = '';
@@ -1265,8 +1258,8 @@ function generateHeaderFileFromIoc(data) {
     let canBusArr = [];
     if (data.peripherals.can.length > 0) {
         data.peripherals.can.forEach(c => {
-            if (c.name) {
-                let idx = c.name.match(/\d+/);
+            if (c) {
+                let idx = c.match(/\d+/);
                 if (idx) canBusArr.push(idx[0]);
             }
         });
@@ -1297,6 +1290,39 @@ function generateHeaderFileFromIoc(data) {
     // 更新预览
     document.getElementById('codePreview').textContent = code;
 }
+
+        // ========== CAN类型按钮联动逻辑 ========== //
+        // 全局变量保存当前选中类型
+        window.selectedCanType = 'standard';
+        const canTypeStandardBtn = document.getElementById('canTypeStandard');
+        const canTypeFDBtn = document.getElementById('canTypeFD');
+        function setCanType(type) {
+            if (!canTypeStandardBtn || !canTypeFDBtn) return;
+            if (type === 'fd') {
+                canTypeFDBtn.classList.remove('bg-gray-100', 'text-gray-700');
+                canTypeFDBtn.classList.add('bg-primary', 'text-white');
+                canTypeStandardBtn.classList.remove('bg-primary', 'text-white');
+                canTypeStandardBtn.classList.add('bg-gray-100', 'text-gray-700');
+                // 图标切换
+                canTypeFDBtn.querySelector('i').className = 'fa fa-dot-circle-o';
+                canTypeStandardBtn.querySelector('i').className = 'fa fa-circle-o';
+                window.selectedCanType = 'fd';
+            } else {
+                canTypeStandardBtn.classList.remove('bg-gray-100', 'text-gray-700');
+                canTypeStandardBtn.classList.add('bg-primary', 'text-white');
+                canTypeFDBtn.classList.remove('bg-primary', 'text-white');
+                canTypeFDBtn.classList.add('bg-gray-100', 'text-gray-700');
+                // 图标切换
+                canTypeStandardBtn.querySelector('i').className = 'fa fa-dot-circle-o';
+                canTypeFDBtn.querySelector('i').className = 'fa fa-circle-o';
+                window.selectedCanType = 'standard';
+            }
+            if (typeof generateHeaderFile === 'function') generateHeaderFile();
+        }
+        // 绑定点击事件
+        if (canTypeStandardBtn) canTypeStandardBtn.addEventListener('click', () => setCanType('standard'));
+        if (canTypeFDBtn) canTypeFDBtn.addEventListener('click', () => setCanType('fd'));
+
     </script>
 </body>
 </html>
