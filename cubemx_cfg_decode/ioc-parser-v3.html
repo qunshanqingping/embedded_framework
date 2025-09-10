@@ -319,11 +319,11 @@
             </div>
         </section>
 
-        <!-- 新增：底盘和CAN初始化配置生成工具 -->
+        <!-- 新增：robot_config.h初始化配置生成工具 -->
         <!-- 直接引入生成工具的HTML结构 -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                <i class="fa fa-cogs text-primary mr-2"></i>底盘和CAN初始化配置生成
+                <i class="fa fa-cogs text-primary mr-2"></i>robot_config.h初始化配置生成
             </h2>
             <!-- 文件操作区 -->
             <div class="mb-6 flex flex-wrap gap-4">
@@ -352,6 +352,42 @@
                         <label for="guardName" class="block text-sm font-medium text-gray-600 mb-1">头文件保护宏</label>
                         <input type="text" id="guardName" value="USER_CONFIGURATION_H"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                </div>
+            </div>
+            <!-- 新增：遥控器初始化配置 -->
+            <div class="mb-8 border-b border-gray-200 pb-6">
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">遥控器初始化配置选项</h3>
+                <div class="space-y-4">
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="rcNone" name="remoteType" value="none" checked
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="rcNone" class="font-medium text-gray-800">不启用遥控器</label>
+                            <p class="text-sm text-gray-600 mt-1">不定义任何遥控器类型宏</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="rcDT7" name="remoteType" value="dt7"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="rcDT7" class="font-medium text-gray-800">大疆DT7</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_REMOTE_DJI_DT7</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center mt-1 mr-3">
+                            <input type="radio" id="rcI6X" name="remoteType" value="i6x"
+                                class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                        </div>
+                        <div>
+                            <label for="rcI6X" class="font-medium text-gray-800">富斯I6X</label>
+                            <p class="text-sm text-gray-600 mt-1">定义宏: USER_REMOTE_FLYSKY_I6X</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1456,21 +1492,45 @@
         // 复制生成工具相关JS（可直接粘贴，或将相关函数合并到主JS）
         // 包括：generateHeaderFile, copyToClipboard, downloadHeaderFile, updateCanUI, updateFifoVisibility, validateFifoSelection, showFifoWarning, resetToDefault, handleFileUpload, parseHeaderFile, fixFifoSelection, showLoadSuccessNotification
 
-        // 监听底盘类型选择变化，实时更新预览
+        // 监听遥控器类型选择变化，实时更新预览
+document.querySelectorAll('input[name="remoteType"]').forEach(radio => {
+    radio.addEventListener('change', generateHeaderFile);
+});
+
+// 监听底盘类型选择变化，实时更新预览
 document.querySelectorAll('input[name="chassisType"]').forEach(radio => {
     radio.addEventListener('change', generateHeaderFile);
 });
 
-// 生成头文件内容（只展示底盘部分，其他部分保持原有逻辑）
+// 生成头文件内容（增加遥控器部分）
 function generateHeaderFile() {
     // ...existing code...
+    // 获取选中的遥控器类型
+    const selectedRemote = document.querySelector('input[name="remoteType"]:checked')?.value || 'none';
     // 获取选中的底盘类型
     const selectedChassis = document.querySelector('input[name="chassisType"]:checked')?.value || 'none';
 
-    // ...existing code...
-    // 根据选择添加底盘宏定义
-    let code = '';
     // ...头文件保护...
+    let code = '';
+    // ...existing code...
+
+    // 遥控器配置
+    code += `/* 遥控器初始化配置选项 */\n`;
+    code += `// 选择遥控器类型\n`;
+    if (selectedRemote === 'dt7') {
+        code += `#define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
+        code += `// #define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
+    } else if (selectedRemote === 'i6x') {
+        code += `// #define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
+        code += `#define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
+    } else { // 不启用
+        code += `// 未启用任何遥控器类型\n`;
+        code += `// #define USER_REMOTE_DJI_DT7 // 大疆DT7\n`;
+        code += `// #define USER_REMOTE_FLYSKY_I6X // 富斯I6X\n`;
+    }
+    code += `\n`;
+
+    // 底盘配置
     code += `/* 底盘初始化配置选项 */\n`;
     code += `// 选择底盘类型\n`;
     if (selectedChassis === 'omni') {
