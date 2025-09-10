@@ -172,12 +172,18 @@
         body.dark .text-gray-100 {
             color: #f1f5f9 !important;
         }
+        body.dark .text-gray-800 {
+            color: #e5e7eb !important;
+        }
+        body.dark .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
         body.dark .rounded-xl {
             box-shadow: 0 2px 8px #0006;
         }
     </style>
 </head>
-<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
+<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col dark">
     <!-- 顶部导航栏 -->
     <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
         <div class="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
@@ -544,7 +550,7 @@
 
             <!-- CAN配置部分 -->
             <div class="mb-6">
-                <h3 class="font-medium text-gray-700 mb-4 text-lg">CAN 初始化配置选项</h3>
+                <h3 class="font-medium text-gray-700 mb-4 text-lg">CAN 初始化配��选项</h3>
                 <div class="space-y-4">
                     <!-- CAN类型（只读，不可交互） -->
                     <div>
@@ -1126,6 +1132,13 @@
                     setCanType('fd');
                 } else if (hasCAN) {
                     setCanType('standard');
+                } else {
+                    clearCanType();
+                    canFifoSelection = {};
+                    const fifoSection = document.getElementById('fifoConfigSection');
+                    if (fifoSection) fifoSection.classList.add('hidden');
+                    generateHeaderFile();
+                    return;
                 }
 
                 // CAN总线自动填充
@@ -1243,6 +1256,13 @@
         });
 
         // 深色模式切换
+        // 页面加载时默认深色
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('dark');
+            const icon = themeToggle.querySelector('i');
+            icon.classList.remove('fa-moon-o');
+            icon.classList.add('fa-sun-o');
+        });
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark');
             const icon = themeToggle.querySelector('i');
