@@ -7,17 +7,15 @@
  * @date 2025-07-04
  * @copyright  Copyright (c) 2025 HDU—PHOENIX
  */
-#pragma once
 #include "user_config.h"
 #ifndef BSP_CAN_H
 #define BSP_CAN_H
 #ifdef USER_CAN_STANDARD
-#include <stdint.h>
 #include "can.h"
 /**
  *@brief 1路CAN最大注册实例数，1M Baud rate下最多建议8个实例
  */
-#define FDCAN_MAX_REGISTER_CNT 8
+#define CAN_MAX_REGISTER_CNT 8
 
 #pragma pack(1)
 /**

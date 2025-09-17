@@ -28,7 +28,7 @@ typedef struct _CanInstance_s
 typedef struct
 {
     char* topic_name;                  //实例名称
-    uint8_t can_channel;               //can通道号 1,2,3 分别对应 FDCAN1, FDCAN2, FDCAN3，为了抽象接口向module层隐藏HAL库
+    uint8_t can_number;               //can通道号 1,2,3 分别对应 FDCAN1, FDCAN2, FDCAN3，为了抽象接口向module层隐藏HAL库
     uint16_t tx_id;                    //发送id
     uint16_t rx_id;                    //接收id
     void (*can_module_callback)(struct _CanInstance_s *);   //接收的回调函数, 用于解析接收到的数据
