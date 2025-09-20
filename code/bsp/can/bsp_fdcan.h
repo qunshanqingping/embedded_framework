@@ -1,10 +1,9 @@
-#pragma once
+
+
+#ifndef __BSP_FDCAN_H__
+#define __BSP_FDCAN_H__
 #include "user_config.h"
-
 #ifdef USER_CAN_FD
-#ifndef BSP_FDCAN_H
-#define BSP_FDCAN_H
-
 #include <stdint.h>
 #include "fdcan.h"
 
