@@ -17,7 +17,7 @@
 /**
  *@brief 1路CAN最大注册实例数，1M Baud rate下最多建议8个实例
  */
-#define FDCAN_MAX_REGISTER_CNT 8
+#define CAN_MAX_REGISTER_CNT 8
 
 #pragma pack(1)
 /**
