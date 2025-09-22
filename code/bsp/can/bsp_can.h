@@ -8,7 +8,7 @@
  * @copyright  Copyright (c) 2025 HDU—PHOENIX
  */
 #pragma once
-#include "user_config.h"
+#include "robot_config.h"
 #ifndef BSP_CAN_H
 #define BSP_CAN_H
 #ifdef USER_CAN_STANDARD
@@ -17,7 +17,7 @@
 /**
  *@brief 1路CAN最大注册实例数，1M Baud rate下最多建议8个实例
  */
-#define FDCAN_MAX_REGISTER_CNT 8
+#define CAN_MAX_REGISTER_CNT 8
 
 #pragma pack(1)
 /**

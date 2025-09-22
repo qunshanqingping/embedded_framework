@@ -28,13 +28,13 @@
 // ReSharper disable once CppDeclaratorNeverUsed
 static uint8_t can_idx1;
 // ReSharper disable once CppDeclaratorNeverUsed
-static CanInstance_s *can1_instance[FDCAN_MAX_REGISTER_CNT]; // CAN1 实例数组,
+static CanInstance_s *can1_instance[CAN_MAX_REGISTER_CNT]; // CAN1 实例数组,
 #endif
 #ifdef USER_CAN2
 // ReSharper disable once CppDeclaratorNeverUsed
 static uint8_t can_idx2;
 // ReSharper disable once CppDeclaratorNeverUsed
-static CanInstance_s *can2_instance[FDCAN_MAX_REGISTER_CNT]; // CAN2
+static CanInstance_s *can2_instance[CAN_MAX_REGISTER_CNT]; // CAN2
 #endif
 
 /* 过滤器编号 */
@@ -232,7 +232,7 @@ static void Can_Init(void) {
  * @return 指向对应CAN句柄的指针，如果编号无效则返回NULL。
  */
 
-static CAN_HandleTypeDef *Select_FDCAN_Handle(const uint8_t can_number) {
+static CAN_HandleTypeDef *Select_CAN_Handle(const uint8_t can_number) {
 #ifdef USER_CAN1
     if (can_number == 1) {
         return &hcan1;
@@ -268,16 +268,12 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
 #ifdef USER_CAN1
     if (config->can_number == 1) {
         /* 检查是否超过CAN1最大实例数 */
-        if (can_idx1 == FDCAN_MAX_REGISTER_CNT) {
+        if (can_idx1 == CAN_MAX_REGISTER_CNT) {
             Log_Error("%s : Can1 Register Failed, Max Register Count Reached", config->topic_name);
             return false;
         }
         /* 检查ID是否冲突 */
         for (uint8_t i = 0; i < can_idx1; i++) {
-            if (can1_instance[i]->tx_id == config->tx_id) {
-                Log_Error("%s : Can1 Register Failed, Tx ID 0x%03X Already Exists", config->topic_name, config->tx_id);
-                return false;
-            }
             if (can1_instance[i]->rx_id == config->rx_id) {
                 Log_Error("%s : Can1 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
                 return false;
@@ -287,15 +283,11 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
 #ifdef USER_CAN2
     if (config->can_number == 2) {
         /* 检查是否超过CAN2最大实例数 */
-        if (can_idx2 == FDCAN_MAX_REGISTER_CNT) {
+        if (can_idx2 == CAN_MAX_REGISTER_CNT) {
             Log_Error("%s : Can2 Register Failed, Max Register Count Reached", config->topic_name);
             return false;
         }
         for (uint8_t i = 0; i < can_idx2; i++) {
-            if (can2_instance[i]->tx_id == config->tx_id) {
-                Log_Error("%s : Can2 Register Failed, Tx ID 0x%03X Already Exists", config->topic_name, config->tx_id);
-                return false;
-            }
             if (can2_instance[i]->rx_id == config->rx_id) {
                 Log_Error("%s : Can2 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
                 return false;
@@ -358,7 +350,7 @@ CanInstance_s *Can_Register(CanInitConfig_s *config) {
     /* 注册实例名称 */
     instance->topic_name = config->topic_name;
     /* 选择并注册CAN句柄 */
-    instance->can_handle = Select_FDCAN_Handle(config->can_number);
+    instance->can_handle = Select_CAN_Handle(config->can_number);
     /* 配置发送ID */
     instance->tx_id = config->tx_id;
     /* 配置CAN发送报文头 */
@@ -443,7 +435,7 @@ bool Can_Transmit(const CanInstance_s *instance) {
  * @param can_instance 指向已注册的CanInstance_s结构体数组的指针
  */
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
-static void USER_CAN_RxFifo0MsgPendingCallback(CAN_RxFrame_TypeDef *CAN_RxFIFOxFrame, const uint8_t idx,
+static void USER_CAN_RxFifo0MsgPendingCallback(CAN_RxFrame_TypeDef *CAN_RxFIFOxFrame,  uint8_t idx,
                                                CanInstance_s *can_instance) {
     /* 检查是否为注册的CAN实例 */
     if (idx == 0) {

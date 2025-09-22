@@ -8,7 +8,7 @@
  */
 
 #include "dbus.h"
-#include "basic_math.h"
+#include "robot_config.h"
 #include "string.h"
 /*!
  * @brief Decode DR16 receiver data buffer into remote control structure

@@ -1,5 +1,5 @@
 #include "bsp_usart.h"
-#include "basic_math.h"
+#include "robot_config.h"
 uint8_t id = 0; // 用于标识UART实例的唯一id,从0开始
 UartInstance_s *uart_instance[USART_MAX_CNT]; // UART实例数组,用于存储UART注册的实例
 /**

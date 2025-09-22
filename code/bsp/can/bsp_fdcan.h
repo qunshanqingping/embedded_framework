@@ -1,11 +1,10 @@
 #pragma once
-#include "user_config.h"
+#include "robot_config.h"
 
 #ifdef USER_CAN_FD
 #ifndef BSP_FDCAN_H
 #define BSP_FDCAN_H
 
-#include <stdint.h>
 #include "fdcan.h"
 
 #define FDCAN_MAX_REGISTER_CNT 16
@@ -28,7 +27,7 @@ typedef struct _CanInstance_s
 typedef struct
 {
     char* topic_name;                  //实例名称
-    uint8_t can_channel;               //can通道号 1,2,3 分别对应 FDCAN1, FDCAN2, FDCAN3，为了抽象接口向module层隐藏HAL库
+    uint8_t can_number;               //can通道号 1,2,3 分别对应 FDCAN1, FDCAN2, FDCAN3，为了抽象接口向module层隐藏HAL库
     uint16_t tx_id;                    //发送id
     uint16_t rx_id;                    //接收id
     void (*can_module_callback)(struct _CanInstance_s *);   //接收的回调函数, 用于解析接收到的数据
@@ -44,7 +43,7 @@ typedef struct {
     uint8_t 			rx_buff[8];
 }FDCAN_RxFrame_TypeDef;
 
-CanInstance_s* Can_Register(const CanInitConfig_s* config);
+CanInstance_s* Can_Register( CanInitConfig_s* config);
 bool Can_Transmit(const CanInstance_s *instance, const uint8_t *tx_buff);
 #endif
 #endif

@@ -1,4 +1,4 @@
-#include "user_config.h"
+#include "robot_config.h"
 #ifdef USER_CAN_FD
 #include "bsp_fdcan.h"
 #include "FreeRTOS.h"
@@ -7,21 +7,21 @@
 #include <stdbool.h>
 #ifdef USER_CAN1
 // ReSharper disable once CppDeclaratorNeverUsed
-static uint8_t idx1;
+static uint8_t can_idx1;
 // ReSharper disable once CppDeclaratorNeverUsed
 static CanInstance_s *fdcan1_instance[FDCAN_MAX_REGISTER_CNT]; // CAN1 实例数组,
 #endif
 
 #ifdef USER_CAN2
 // ReSharper disable once CppDeclaratorNeverUsed
-static uint8_t idx2;
+static uint8_t can_idx2;
 // ReSharper disable once CppDeclaratorNeverUsed
 static CanInstance_s *fdcan2_instance[FDCAN_MAX_REGISTER_CNT]; // CAN2
 #endif
 
 #ifdef USER_CAN3
 // ReSharper disable once CppDeclaratorNeverUsed
-static uint8_t idx3;
+static uint8_t can_idx3;
 // ReSharper disable once CppDeclaratorNeverUsed
 static CanInstance_s *fdcan3_instance[FDCAN_MAX_REGISTER_CNT]; // CAN3
 #endif
@@ -270,7 +270,74 @@ static FDCAN_HandleTypeDef* Select_FDCAN_Handle(const uint8_t can_channel){
     }
 #endif
 }
+/**
+ * @brief 检查CAN实例注册的有效性。
+ * 该函数验证传入的CAN初始化配置是否完整且符合要求，包括检查配置是否为空、必要字段是否填写、CAN编号是否合法以及ID是否冲突等。
+ * @param config 指向CanInitConfig_s结构体的指针，包含初始化CAN所需的配置参数
+ * @return 如果配置有效且符合要求，返回true；否则返回false，并通过日志记录错误原因
+ */
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
+static bool Can_Register_Check(CanInitConfig_s *config) {
+    /* 检查配置是否为空 */
+    if (config == NULL) {
+        Log_Error("Can : Register Failed, Config is NULL");
+        return false;
+    }
+    /* 检查是否正常配置 */
+    if (config->topic_name == NULL || config->rx_id == 0 ||
+        config->tx_id == 0 || !(config->can_number == 1 || config->can_number == 2)) {
+        Log_Error("Can : Register Failed, Config is Incomplete");
+        return false;
+        }
+#ifdef USER_CAN1
+    if (config->can_number == 1) {
+        /* 检查是否超过CAN1最大实例数 */
+        if (can_idx1 == FDCAN_MAX_REGISTER_CNT) {
+            Log_Error("%s : Can1 Register Failed, Max Register Count Reached", config->topic_name);
+            return false;
+        }
+        /* 检查ID是否冲突 */
+        for (uint8_t i = 0; i < can_idx1; i++) {
+            if (fdcan1_instance[i]->rx_id == config->rx_id) {
+                Log_Error("%s : Can1 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
+                return false;
+            }
+        }
+    }
+#endif
+#ifdef USER_CAN2
+    if (config->can_number == 2) {
+        /* 检查是否超过CAN2最大实例数 */
+        if (can_idx2 == FDCAN_MAX_REGISTER_CNT) {
+            Log_Error("%s : Can2 Register Failed, Max Register Count Reached", config->topic_name);
+            return false;
+        }
+        for (uint8_t i = 0; i < can_idx2; i++) {
+            if (fdcan2_instance[i]->rx_id == config->rx_id) {
+                Log_Error("%s : Can2 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
+                return false;
+            }
+        }
+    }
+#endif
+#ifdef USER_CAN3
+    if (config->can_number == 3) {
+        /* 检查是否超过CAN2最大实例数 */
+        if (can_idx3 == FDCAN_MAX_REGISTER_CNT) {
+            Log_Error("%s : Can3 Register Failed, Max Register Count Reached", config->topic_name);
+            return false;
+        }
+        for (uint8_t i = 0; i < can_idx3; i++) {
+            if (fdcan3_instance[i]->rx_id == config->rx_id) {
+                Log_Error("%s : Can3 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
+                return false;
+            }
+        }
+    }
+#endif
 
+    return true;
+}
 /* 公共函数 ------------------------------------------------------------------*/
 
 /**
@@ -282,11 +349,8 @@ static FDCAN_HandleTypeDef* Select_FDCAN_Handle(const uint8_t can_channel){
  *
  * @return 如果成功注册则返回指向新创建的CanInstance_s结构的指针；如果配置无效或内存分配失败则返回NULL。
  */
-CanInstance_s *Can_Register(const CanInitConfig_s *config) {
-    if (config == NULL || config->can_channel == 0) {
-        Log_Error("%s CanInitConfig Is Null", config->topic_name);
-        return NULL; // 参数检查
-    }
+CanInstance_s *Can_Register(CanInitConfig_s *config) {
+    Can_Register_Check(config);
     if (fdcan_init_flag) {
         Can_Init();
     }
@@ -302,7 +366,7 @@ CanInstance_s *Can_Register(const CanInitConfig_s *config) {
     instance->can_module_callback = config->can_module_callback;
     instance->id = config->id;
     instance->tx_conf.Identifier = config->tx_id;
-    instance->can_handle = Select_FDCAN_Handle(config->can_channel);
+    instance->can_handle = Select_FDCAN_Handle(config->can_number);
     // config->can_handle->Init.FrameFormat
     instance->tx_conf.IdType = FDCAN_STANDARD_ID; // 标准 ID
     // instance->tx_conf.IdType = instance->can_handle->Init.FrameFormat;
@@ -316,18 +380,18 @@ CanInstance_s *Can_Register(const CanInitConfig_s *config) {
 
 #ifdef USER_CAN1
     if (instance->can_handle == &hfdcan1) {
-        fdcan1_instance[idx1++] = instance;
+        fdcan1_instance[can_idx1++] = instance;
     }
 #endif
 #ifdef USER_CAN2
     if (instance->can_handle == &hfdcan2){
-        fdcan2_instance[idx2++] = instance;
+        fdcan2_instance[can_idx2++] = instance;
     }
     #endif
 #ifdef USER_CAN3
     if (instance->can_handle == &hfdcan3)
     {
-        fdcan3_instance[idx3++] = instance;
+        fdcan3_instance[can_idx3++] = instance;
     }
 #endif
 
@@ -385,17 +449,17 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
 #ifdef USER_CAN1_FIFO_0
         if (hfdcan == &hfdcan1){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,idx1,*fdcan1_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,can_idx1,*fdcan1_instance);
         }
 #endif
 #ifdef USER_CAN2_FIFO_0
         if (hfdcan == &hfdcan2){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,idx2,*fdcan2_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,can_idx2,*fdcan2_instance);
         }
 #endif
 #ifdef USER_CAN3_FIFO_0
         if (hfdcan == &hfdcan3){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,idx3,*fdcan3_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO0Frame,can_idx3,*fdcan3_instance);
         }
 #endif
     }
@@ -415,17 +479,17 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &FDCAN_RxFIFO1Frame->Header, FDCAN_RxFIFO0Frame->rx_buff);
 #ifdef USER_CAN1_FIFO_1
         if (hfdcan == &hfdcan1){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,idx1, *fdcan1_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,can_idx1, *fdcan1_instance);
         }
 #endif
 #ifdef USER_CAN2_FIFO_1
         if (hfdcan == &hfdcan2){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,idx2,*fdcan2_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,can_idx2,*fdcan2_instance);
         }
 #endif
 #ifdef USER_CAN3_FIFO_1
         if (hfdcan == &hfdcan3){
-            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,idx3,*fdcan3_instance);
+            FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,can_idx3,*fdcan3_instance);
         }
 #endif
     }
