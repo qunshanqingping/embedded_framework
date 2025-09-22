@@ -253,19 +253,19 @@ static void Can_Init(void) {
 }
 
 // ReSharper disable once CppNotAllPathsReturnValue
-static FDCAN_HandleTypeDef* Select_FDCAN_Handle(const uint8_t can_channel){
+static FDCAN_HandleTypeDef* Select_FDCAN_Handle(const uint8_t can_number){
 #ifdef USER_CAN1
-    if (can_channel == 1){
+    if (can_number == 1){
         return &hfdcan1;
     }
 #endif
 #ifdef USER_CAN2
-    if (can_channel == 2){
+    if (can_number == 2){
         return &hfdcan2;
     }
 #endif
 #ifdef USER_CAN3
-    if (can_channel == 3){
+    if (can_number == 3){
         return &hfdcan3;
     }
 #endif
@@ -283,7 +283,7 @@ static FDCAN_HandleTypeDef* Select_FDCAN_Handle(const uint8_t can_channel){
  * @return 如果成功注册则返回指向新创建的CanInstance_s结构的指针；如果配置无效或内存分配失败则返回NULL。
  */
 CanInstance_s *Can_Register(const CanInitConfig_s *config) {
-    if (config == NULL || config->can_channel == 0) {
+    if (config == NULL || config->can_number == 0) {
         Log_Error("%s CanInitConfig Is Null", config->topic_name);
         return NULL; // 参数检查
     }
@@ -302,7 +302,7 @@ CanInstance_s *Can_Register(const CanInitConfig_s *config) {
     instance->can_module_callback = config->can_module_callback;
     instance->id = config->id;
     instance->tx_conf.Identifier = config->tx_id;
-    instance->can_handle = Select_FDCAN_Handle(config->can_channel);
+    instance->can_handle = Select_FDCAN_Handle(config->can_number);
     // config->can_handle->Init.FrameFormat
     instance->tx_conf.IdType = FDCAN_STANDARD_ID; // 标准 ID
     // instance->tx_conf.IdType = instance->can_handle->Init.FrameFormat;

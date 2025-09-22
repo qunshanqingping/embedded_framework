@@ -11,9 +11,6 @@
 
 #include <usart.h>
 
-#include "basic_math.h"
-
-#include "bsp_dwt.h"
 #include "bsp_log.h"
 // #include "bsp_fdcan.h"
 #include "bsp_can.h"
@@ -81,7 +78,7 @@ CanInitConfig_s test_config = {
     .tx_id = 0x200,
     .rx_id = 0x001,
     .can_module_callback = test_decode,
-    .id = NULL
+    .parent_ptr = NULL
 };
 bool test_status;
 uint8_t tx_buf[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
