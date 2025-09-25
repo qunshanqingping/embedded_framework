@@ -14,6 +14,7 @@
 #include "memory.h"
 #include "stdlib.h"
 #include "FreeRTOS.h"
+#include "bsp_log.h"
 /* 私有变量 -----------------------------------------------------------------*/
 
 /**

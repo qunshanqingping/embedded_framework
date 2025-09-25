@@ -17,12 +17,10 @@
 
 
 #include "bsp_can.h"
-#ifdef USER_CAN_STANDARD
+#ifdef USER_CAN_STD
 #include "bsp_fdcan.h"
 #include "FreeRTOS.h"
 #include "bsp_log.h"
-#include <string.h>
-#include <stdbool.h>
 /* 私有类型定义 -----------------------------------------------------------------*/
 #ifdef USER_CAN1
 // ReSharper disable once CppDeclaratorNeverUsed
@@ -287,27 +285,26 @@ static CAN_HandleTypeDef *Select_FDCAN_Handle(const uint8_t can_number) {
 static bool Can_Register_Check(CanInitConfig_s *config) {
     /* 检查配置是否为空 */
     if (config == NULL) {
-        Log_Error("Can : Register Failed, Config is NULL");
+        Log_Error("Can : Register, Config is NULL");
         return false;
     }
     /* 检查是否正常配置 */
-	if
     if (config->topic_name == NULL || config->rx_id == 0 ||
         config->tx_id == 0 || !(config->can_number == 1 || config->can_number == 2)) {
-        Log_Error("Can : Register Failed, Config is Incomplete");
+        Log_Error("Can : Register, Config is Incomplete");
         return false;
     }
 #ifdef USER_CAN1
     if (config->can_number == 1) {
         /* 检查是否超过CAN1最大实例数 */
         if (can_idx1 == CAN_MAX_REGISTER_CNT) {
-            Log_Error("%s : Can1 Register Failed, Max Register Count Reached", config->topic_name);
+            Log_Error("%s : Can1 Register, Max Register Count Reached", config->topic_name);
             return false;
         }
         /* 检查ID是否冲突 */
         for (uint8_t i = 0; i < can_idx1; i++) {
             if (can1_instance[i]->rx_id == config->rx_id) {
-                Log_Error("%s : Can1 Register Failed, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
+                Log_Error("%s : Can1 Register, Rx ID 0x%03X Already Exists", config->topic_name, config->rx_id);
                 return false;
             }
         }
@@ -388,20 +385,38 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
     /* 配置发送ID */
     instance->tx_id = can_config->tx_id;
     /* 配置CAN发送报文头 */
-    instance->tx_header = (CAN_TxHeaderTypeDef){
-        /* 指定标准标识符。该参数必须是 0 到 0x7FF 之间的数值 */
-        .StdId = can_config->tx_id,
-        /* 指定扩展标识符。该参数必须是 0 到 0x1FFFFFFF 之间的数值 */
-        .ExtId = 0x00, //。
-        /* 指定要发送消息的标识符类型。该参数可取值参考 CAN_identifier_type */
-        .IDE = CAN_ID_STD,
-        /* 指定要发送消息的帧类型。该参数可取值参考 CAN_remote_transmission_request */
-        .RTR = CAN_RTR_DATA,
-        /* 指定要发送帧的长度。该参数必须是 0 到 8 之间的数值。 */
-        .DLC = 0x08,
-        /* 指定是否在帧发送开始时将时间戳计数器值发送到 DATA6 和 DATA7（替换 pData[6] 和 pData[7]）。 */
-        .TransmitGlobalTime = DISABLE
-    };
+    if (can_config->frame_type == STD_FARME) {
+        instance->tx_header = (CAN_TxHeaderTypeDef){
+            /* 指定标准标识符。该参数必须是 0 到 0x7FF 之间的数值 */
+            .StdId = can_config->tx_id,
+            /* 指定扩展标识符。该参数必须是 0 到 0x1FFFFFFF 之间的数值 */
+            .ExtId = 0x00000000,
+            /* 指定要发送消息的标识符类型。该参数可取值参考 CAN_identifier_type */
+            .IDE = CAN_ID_STD,
+            /* 指定要发送消息的帧类型。该参数可取值参考 CAN_remote_transmission_request */
+            .RTR = CAN_RTR_DATA,
+            /* 指定要发送帧的长度默认为8 */
+            .DLC = CAN_DLC_LEN_8_BYTES,
+            /* 指定是否在帧发送开始时将时间戳计数器值发送到 DATA6 和 DATA7（替换 pData[6] 和 pData[7]）。 */
+            .TransmitGlobalTime = DISABLE
+        };
+    }
+    else {
+        instance->tx_header = (CAN_TxHeaderTypeDef){
+            /* 指定标准标识符。该参数必须是 0 到 0x7FF 之间的数值 */
+            .StdId = 0x000,
+            /* 指定扩展标识符。该参数必须是 0 到 0x1FFFFFFF 之间的数值 */
+            .ExtId = can_config->tx_id,
+            /* 指定要发送消息的标识符类型。该参数可取值参考 CAN_identifier_type */
+            .IDE = CAN_ID_EXT,
+            /* 指定要发送消息的帧类型。该参数可取值参考 CAN_remote_transmission_request */
+            .RTR = CAN_RTR_DATA,
+            /* 指定要发送帧的长度默认为8 */
+            .DLC = CAN_DLC_LEN_8_BYTES,
+            /* 指定是否在帧发送开始时将时间戳计数器值发送到 DATA6 和 DATA7（替换 pData[6] 和 pData[7]）。 */
+            .TransmitGlobalTime = DISABLE
+        };
+    }
     /* 配置接收ID */
     instance->rx_id = can_config->rx_id;
     /* 配置接收回调函数 */
