@@ -419,7 +419,14 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
     }
     /* 配置接收ID */
     instance->rx_id = can_config->rx_id;
-    /* 配置接收回调函数 */
+    /* 配置接收长度 */
+	if(can_config->rx_len == 0){
+    config->rx_len = 8;
+	}
+	instance->rx_len = can_config->rx_len;
+	/* 分配接收缓冲区 */
+    instance->rx_buff = Malloc_Rx_Buff(can_config);
+	/* 配置接收回调函数 */
     instance->can_module_callback = can_config->can_module_callback;
     /* 配置父指针 */
     instance->parent_ptr = can_config->parent_ptr;
