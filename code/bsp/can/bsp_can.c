@@ -417,6 +417,8 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
             .TransmitGlobalTime = DISABLE
         };
     }
+	/* 分配发送缓冲区 */
+	instance->tx_buff = Malloc_Tx_Buff(can_config);
     /* 配置接收ID */
     instance->rx_id = can_config->rx_id;
     /* 配置接收长度 */
