@@ -1,0 +1,8 @@
+//
+// Created by Tian on 2025/9/30.
+//
+
+#ifndef EMBEDDED_FRAMEWORK_MOTOR_DJI_H
+#define EMBEDDED_FRAMEWORK_MOTOR_DJI_H
+
+#endif //EMBEDDED_FRAMEWORK_MOTOR_DJI_H
