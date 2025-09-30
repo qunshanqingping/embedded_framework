@@ -352,16 +352,16 @@ bool Can_Transmit(const CanInstance_s *instance, const uint8_t *tx_buff) {
  * @param idx 表示fdcan_instance数组中CanInstance_s元素的数量的索引。
  * @param fdcan_instance CanInstance_s结构数组，每个结构包含特定CAN实例的配置和回调。
  */
-static void FDCAN_RxFifoCallback(const FDCAN_RxFrame_TypeDef *FDCAN_RxFIFOxFrame, const uint8_t idx, CanInstance_s *fdcan_instance) {
+static void FDCAN_RxFifoCallback(const FDCAN_RxFrame_TypeDef *FDCAN_RxFIFOxFrame, const uint8_t idx, CanInstance_s **fdcan_instance) {
             if (idx == 0)
                 return;
             // ReSharper disable once CppDFAUnreachableCode
             for (uint8_t i = 0; i < idx; i++) {
-                if ( FDCAN_RxFIFOxFrame->Header.Identifier == fdcan_instance[i].rx_id) {
-                    if (fdcan_instance[i].can_module_callback != NULL)
+                if ( FDCAN_RxFIFOxFrame->Header.Identifier == fdcan_instance[i]->rx_id) {
+                    if (fdcan_instance[i]->can_module_callback != NULL)
                     {
                         fdcan_instance[i].rx_len = FDCAN_RxFIFOxFrame->Header.DataLength;
-                        memcpy(fdcan_instance[i].rx_buff, FDCAN_RxFIFOxFrame->rx_buff,fdcan_instance->rx_len);
+                        memcpy(fdcan_instance[i]->rx_buff, FDCAN_RxFIFOxFrame->rx_buff,fdcan_instance[i]->rx_len);
                         fdcan_instance[i].can_module_callback(&fdcan_instance[i]);
                     }
                     break;

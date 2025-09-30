@@ -37,11 +37,12 @@ typedef struct CanInstance_s
     CAN_HandleTypeDef *can_handle;                        // CAN 句柄
     CAN_TxHeaderTypeDef tx_header;                          // CAN 报文发送配置
     uint32_t tx_id;                                       // 发送 id, 即发送的 CAN 报文 id
-    uint8_t tx_buff[8];                                   // 发送缓存, 可以不用，但建议保留，方便调试
     uint8_t tx_len;
+    uint8_t *tx_buff;                                   // 发送缓存, 可以不用，但建议保留，方便调试
+
     uint32_t rx_id;                                       // 接收 id, 即接收的 CAN 报文 id
-    uint8_t rx_buff[8];                                   // 接收缓存, 目前保留，增加了一次 memcpy 操作，方便监视所以保留
     uint8_t rx_len;                                       // 接收长度, 可能为 0-8
+    uint8_t *rx_buff;                                   // 接收缓存, 目前保留，增加了一次 memcpy 操作，方便监视所以保留
     void (*can_module_callback)(struct CanInstance_s *); // 接收的回调函数, 用于解析接收到的数据，如果增加了 uint8_t *rx_buff 成员，前面的rx_buff[8] 可以删去
     void *parent_ptr;                                             // 使用 can 外设的模块指针 (即 id 指向的模块拥有此 can 实例, 是父子关系)
 }CanInstance_s;

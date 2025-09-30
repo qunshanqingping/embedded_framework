@@ -17,18 +17,16 @@
 
 
 #include "bsp_can.h"
-#ifdef USER_CAN_STD
-#include "bsp_fdcan.h"
-#include "FreeRTOS.h"
+#if defined (USER_CAN_STD)
 #include "bsp_log.h"
 /* 私有类型定义 -----------------------------------------------------------------*/
-#ifdef USER_CAN1
+#if defined (USER_CAN1)
 // ReSharper disable once CppDeclaratorNeverUsed
 static uint8_t can_idx1;
 // ReSharper disable once CppDeclaratorNeverUsed
 static CanInstance_s *can1_instance[CAN_MAX_REGISTER_CNT]; // CAN1 实例数组,
 #endif
-#ifdef USER_CAN2
+#if defined (USER_CAN2)
 // ReSharper disable once CppDeclaratorNeverUsed
 static uint8_t can_idx2;
 // ReSharper disable once CppDeclaratorNeverUsed
@@ -58,7 +56,7 @@ static uint8_t can_fifo_select_flag = 0; // 0表示使用fifo0,1表示使用fifo
 // ReSharper disable once CppUnusedFunction
 static void ID_Mask_Mode_Can_Filter_Init(void) {
     /* 配置 CAN1_FIFO_0 过滤器 */
-#if defined (USER_CAN1_FIFO_0)
+#if defined ((USER_CAN1)_FIFO_0)
     /* 配置 CAN1 FIFO0 结构体 */
     CAN_FilterTypeDef filter_fifo0_conf;
     filter_fifo0_conf.FilterActivation = CAN_FILTER_ENABLE;
@@ -71,17 +69,17 @@ static void ID_Mask_Mode_Can_Filter_Init(void) {
     filter_fifo0_conf.FilterBank = 0;
     filter_fifo0_conf.FilterFIFOAssignment = CAN_RX_FIFO0;
     while (HAL_CAN_ConfigFilter(&hcan1, &filter_fifo0_conf) != HAL_OK) {
-        Log_Error("CAN1 FIFO0 Filter Config");
+        Log_Error("CAN1 FIFO0 Filter Config failed");
     }
-#if defined (USER_CAN2_FIFO_0)
+#if defined ((USER_CAN2)_FIFO_0)
     filter_fifo0_conf.SlaveStartFilterBank = 14;
     filter_fifo0_conf.FilterBank = 14;
     while (HAL_CAN_ConfigFilter(&hcan2, &filter_fifo0_conf) != HAL_OK) {
-        Log_Error("CAN2 FIFO0 Filter Config");
+        Log_Error("CAN2 FIFO0 Filter Config failed");
     }
 #endif
 #endif
-#if !defined(USER_CAN1_FIFO_0) && defined(USER_CAN2_FIFO_0)
+#if !defined((USER_CAN1)_FIFO_0) && defined((USER_CAN2)_FIFO_0)
     /* 配置 CAN2 FIFO0 结构体 */
     CAN_FilterTypeDef filter_fifo0_can2_conf;
     filter_fifo0_can2_conf.FilterActivation = CAN_FILTER_ENABLE;
@@ -97,7 +95,7 @@ static void ID_Mask_Mode_Can_Filter_Init(void) {
         Log_Error("CAN2 FIFO0 Filter Config Error");
     }
 #endif
-#ifdef USER_CAN1_FIFO_1
+#if defined (USER_CAN1)_FIFO_1
     CAN_FilterTypeDef filter_fifo1_conf;
     filter_fifo1_conf.FilterActivation = CAN_FILTER_ENABLE;
     filter_fifo1_conf.FilterMode = CAN_FILTERMODE_IDMASK;
@@ -111,7 +109,7 @@ static void ID_Mask_Mode_Can_Filter_Init(void) {
     while (HAL_CAN_ConfigFilter(&hcan1, &filter_fifo1_conf) != HAL_OK) {
         Log_Error("CAN1 FIFO0 Filter Config");
     }
-#ifdef USER_CAN2_FIFO_1
+#if defined (USER_CAN2)_FIFO_1
     filter_fifo1_conf.SlaveStartFilterBank = 14;
     filter_fifo1_conf.FilterBank = 14;
     while (HAL_CAN_ConfigFilter(&hcan2, &filter_fifo1_conf) != HAL_OK) {
@@ -119,7 +117,7 @@ static void ID_Mask_Mode_Can_Filter_Init(void) {
     }
 #endif
 #endif
-#if !defined (USER_CAN1_FIFO_1) && defined(USER_CAN2_FIFO_1)
+#if !defined ((USER_CAN1)_FIFO_1) && defined((USER_CAN2)_FIFO_1)
     /* 配置 CAN2 FIFO0 结构体 */
     CAN_FilterTypeDef filter_fifo1_can2_conf;
     filter_fifo1_can2_conf.FilterActivation = CAN_FILTER_ENABLE;
@@ -156,15 +154,15 @@ static bool ID_List_Mode_Can_Filter_Init(const CanInstance_s *instance) {
     static uint8_t can2_filter_idx = 14;
 #endif
     /* 选择fifo */
-#if defined(USER_CAN1_FIFO_0) || defined(USER_CAN2_FIFO_0)
-#if defined(USER_CAN1_FIFO_1) || defined(USER_CAN2_FIFO_1)
+#if defined((USER_CAN1)_FIFO_0) || defined((USER_CAN2)_FIFO_0)
+#if defined((USER_CAN1)_FIFO_1) || defined((USER_CAN2)_FIFO_1)
     /* 如果同时定义了FIFO0和FIFO1,则交替使用 */
     can_filter_config.FilterFIFOAssignment = can_fifo_select_flag ? CAN_RX_FIFO0 : CAN_RX_FIFO1;
 #else
     /* 如果只定义了FIFO0,则全部使用FIFO0 */
     can_filter_config.FilterFIFOAssignment = CAN_RX_FIFO0;
 #endif
-#elif defined (USER_CAN1_FIFO_1) || defined(USER_CAN2_FIFO_1)
+#elif defined ((USER_CAN1)_FIFO_1) || defined((USER_CAN2)_FIFO_1)
     /* 如果只定义了FIFO1,则全部使用FIFO1 */
     can_fifo_config.FilterFIFOAssignment = CAN_RX_FIFO1;
 #endif
@@ -203,33 +201,33 @@ static bool ID_List_Mode_Can_Filter_Init(const CanInstance_s *instance) {
  * @return void,失败会卡死在while循环
  */
 static void Can_Service_Init(void) {
-#ifdef USER_CAN1
+#if defined (USER_CAN1)
     while (HAL_CAN_Start(&hcan1) != HAL_OK) {
         Log_Error("CAN1 Starts Failed");
     }
-#ifdef USER_CAN2
+#if defined (USER_CAN2)
     while (HAL_CAN_Start(&hcan2) != HAL_OK) {
         Log_Error("CAN2 Starts Failed");
     }
 #endif
 #endif
-#ifdef USER_CAN1_FIFO_0
+#if defined (USER_CAN1)_FIFO_0
     while (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
         Log_Error("CAN1 FIFO0 Interruption Config Error");
     }
 #endif
-#ifdef USER_CAN2_FIFO_0
+#if defined (USER_CAN2)_FIFO_0
     while (HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
         Log_Error("CAN2 FIFO0 Interruption Config Error");
     }
 #endif
 
-#ifdef USER_CAN1_FIFO_1
+#if defined (USER_CAN1)_FIFO_1
     while (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK) {
         Log_Error("CAN1 FIFO1 Interruption Config Error");
     }
 #endif
-#ifdef USER_CAN2_FIFO_1
+#if defined (USER_CAN2)_FIFO_1
     while (HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK) {
         Log_Error("CAN2 FIFO1 Interruption Config Error");
     }
@@ -261,13 +259,13 @@ static void Can_Init(void) {
  * @return 指向对应CAN句柄的指针，如果编号无效则返回NULL。
  */
 
-static CAN_HandleTypeDef *Select_FDCAN_Handle(const uint8_t can_number) {
-#ifdef USER_CAN1
+static CAN_HandleTypeDef *Select_CAN_Handle(const uint8_t can_number) {
+#if defined (USER_CAN1)
     if (can_number == 1) {
         return &hcan1;
     }
 #endif
-#ifdef USER_CAN2
+#if defined (USER_CAN2)
     if (can_number == 2) {
         return &hcan2;
     }
@@ -289,12 +287,23 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
         return false;
     }
     /* 检查是否正常配置 */
-    if (config->topic_name == NULL || config->rx_id == 0 ||
-        config->tx_id == 0 || !(config->can_number == 1 || config->can_number == 2)) {
-        Log_Error("Can : Register, Config is Incomplete");
-        return false;
+	if(config->topic_name == NULL){
+        Log_Error("Can : Register, Topic Name is NULL");
+		return false;
+	}
+	if(config->rx_id == 0){
+        Log_Error("%s : Can Register, Rx ID is 0x000", config->topic_name);
+		return false;
     }
-#ifdef USER_CAN1
+	if(config->tx_id == 0){
+        Log_Error("%s : Can Register, Tx ID is 0x000", config->topic_name);
+		return false;
+    }
+    if(!(config->can_number == 1 || config->can_number == 2)){
+        Log_Error("%s : Can Register, CAN Number is Invalid", config->topic_name);
+		return false;
+    }
+#if defined (USER_CAN1)
     if (config->can_number == 1) {
         /* 检查是否超过CAN1最大实例数 */
         if (can_idx1 == CAN_MAX_REGISTER_CNT) {
@@ -309,7 +318,8 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
             }
         }
     }
-#ifdef USER_CAN2
+#endif
+#if defined (USER_CAN2)
     if (config->can_number == 2) {
         /* 检查是否超过CAN2最大实例数 */
         if (can_idx2 == CAN_MAX_REGISTER_CNT) {
@@ -324,7 +334,6 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
         }
     }
 #endif
-#endif
     return true;
 }
 
@@ -334,7 +343,7 @@ static bool Can_Register_Check(CanInitConfig_s *config) {
  * @param instance 指向要注册的CanInstance_s结构体的指针
  */
 static void Register_To_Can_x_Instance(CanInstance_s *instance) {
-#ifdef USER_CAN1
+#if defined (USER_CAN1)
     if (instance->can_handle == &hcan1) {
         can1_instance[can_idx1] = instance;
         can_idx1++;
@@ -342,7 +351,8 @@ static void Register_To_Can_x_Instance(CanInstance_s *instance) {
                     instance->tx_id,
                     instance->rx_id);
     }
-#ifdef USER_CAN2
+#endif
+#if defined (USER_CAN2)
     if (instance->can_handle == &hcan2) {
         can2_instance[can_idx2] = instance;
         can_idx2++;
@@ -351,7 +361,59 @@ static void Register_To_Can_x_Instance(CanInstance_s *instance) {
                     instance->rx_id);
     }
 #endif
+}
+
+/**
+ * @brief 为CAN实例分配发送缓冲区。
+ * 该函数根据CAN实例的配置为其分配发送缓冲区。如果分配成功，返回指向缓冲区的指针；如果失败，则返回NULL，并通过日志记录错误原因。
+ * @param can_config 指向CanInitConfig_s结构体的指针，包含初始化CAN所需的配置参数
+ * @return 返回指向分配的发送缓冲区的指针，或在发生错误时返回NULL
+ */
+static uint8_t* Malloc_Tx_Buff(CanInitConfig_s *can_config){
+#if defined(USER_CAN1)
+	/* 检查CAN1是否已经分配过发送缓冲区 */
+	if (can_config->can_number == 1){
+        for(uint8_t i = 0; i < can_idx1; i++){
+            if (can1_instance[i]->tx_id == can_config->tx_id){
+                return can1_instance[i]->tx_buff;
+            }
+        }
+    }
 #endif
+#if defined(USER_CAN2)
+	/* 检查CAN2是否已经分配过发送缓冲区 */
+    if (can_config->can_number == 2){
+        for(uint8_t i = 0; i < can_idx2; i++){
+            if (can2_instance[i]->tx_id == can_config->tx_id){
+                return can2_instance[i]->tx_buff;
+            }
+        }
+    }
+#endif
+	/* 分配发送缓冲区 */
+    uint8_t* tx_buff = user_malloc(can_config->tx_len * sizeof(uint8_t));
+    if (tx_buff == NULL){
+        Log_Error("%s : Can Register Failed, No Memory for Tx Buff", can_config->topic_name);
+        return NULL;
+	}
+    memset(tx_buff, 0, can_config->tx_len * sizeof(uint8_t));
+    return tx_buff;
+}
+
+/**
+ * @brief 为CAN实例分配接收缓冲区。
+ * 该函数根据CAN实例的配置为其分配接收缓冲区。如果分配成功，返回指向缓冲区的指针；如果失败，则返回NULL，并通过日志记录错误原因。
+ * @param can_config 指向CanInitConfig_s结构体的指针，包含初始化CAN所需的配置参数
+ * @return 返回指向分配的接收缓冲区的指针，或在发生错误时返回NULL
+ */
+static uint8_t* Malloc_Rx_Buff(CanInitConfig_s *can_config){
+	uint8_t* rx_buff = user_malloc(can_config->rx_len * sizeof(uint8_t));
+    if (rx_buff == NULL){
+        Log_Error("%s : Can Register Failed, No Memory for Rx Buff", can_config->topic_name);
+        return NULL;
+    }
+    memset(rx_buff, 0, can_config->rx_len * sizeof(uint8_t));
+    return rx_buff;
 }
 
 /**
@@ -362,13 +424,13 @@ static void Register_To_Can_x_Instance(CanInstance_s *instance) {
  */
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
 CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
-    /* 检查注册条件 */
-    if (Can_Register_Check(can_config) == false) {
-        return NULL;
-    }
     /* 如果是第一次注册CAN实例，则初始化CAN模块 */
     if (can_init_flag) {
         Can_Init();
+    }
+    /* 检查注册条件 */
+    if (Can_Register_Check(can_config) == false) {
+        return NULL;
     }
     /* 分配内存并初始化CAN实例 */
     CanInstance_s *instance = user_malloc(sizeof(CanInstance_s));
@@ -381,9 +443,14 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
     /* 注册实例名称 */
     instance->topic_name = can_config->topic_name;
     /* 选择并注册CAN句柄 */
-    instance->can_handle = Select_FDCAN_Handle(can_config->can_number);
+    instance->can_handle = Select_CAN_Handle(can_config->can_number);
     /* 配置发送ID */
     instance->tx_id = can_config->tx_id;
+    /* 配置发送长度 */
+	if(can_config->tx_len == 0){
+	config->tx_len = 8;
+	}
+	instance->tx_len = can_config->tx_len;
     /* 配置CAN发送报文头 */
     if (can_config->frame_type == STD_FARME) {
         instance->tx_header = (CAN_TxHeaderTypeDef){
@@ -396,7 +463,7 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
             /* 指定要发送消息的帧类型。该参数可取值参考 CAN_remote_transmission_request */
             .RTR = CAN_RTR_DATA,
             /* 指定要发送帧的长度默认为8 */
-            .DLC = CAN_DLC_LEN_8_BYTES,
+            .DLC = instance->tx_len,
             /* 指定是否在帧发送开始时将时间戳计数器值发送到 DATA6 和 DATA7（替换 pData[6] 和 pData[7]）。 */
             .TransmitGlobalTime = DISABLE
         };
@@ -412,7 +479,7 @@ CanInstance_s *Can_Register(CanInitConfig_s *can_config) {
             /* 指定要发送消息的帧类型。该参数可取值参考 CAN_remote_transmission_request */
             .RTR = CAN_RTR_DATA,
             /* 指定要发送帧的长度默认为8 */
-            .DLC = CAN_DLC_LEN_8_BYTES,
+            .DLC = instance->tx_len,
             /* 指定是否在帧发送开始时将时间戳计数器值发送到 DATA6 和 DATA7（替换 pData[6] 和 pData[7]）。 */
             .TransmitGlobalTime = DISABLE
         };
@@ -527,11 +594,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     /* 从FIFO0中获取接收的消息 */
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &CAN_RxFIFO0Frame.RxHeader, CAN_RxFIFO0Frame.rx_buff);
     /* 根据CAN句柄调用相应的回调函数处理接收到的消息 */
-#ifdef USER_CAN1
+#if defined (USER_CAN1)
     if (hcan == &hcan1) {
         USER_CAN_RxFifo0MsgPendingCallback(&CAN_RxFIFO0Frame, can_idx1, can1_instance);
     }
-#ifdef USER_CAN2
+#if defined (USER_CAN2)
     if (hcan == &hcan2) {
         USER_CAN_RxFifo0MsgPendingCallback(&CAN_RxFIFO0Frame, can_idx2, can2_instance);
     }
@@ -551,11 +618,11 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     /* 从FIFO1中获取接收的消息 */
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &CAN_RxFIFO1Frame.RxHeader, CAN_RxFIFO1Frame.rx_buff);
     /* 根据CAN句柄调用相应的回调函数处理接收到的消息 */
-#ifdef USER_CAN1
+#if defined (USER_CAN1)
     if (hcan == &hcan1) {
         USER_CAN_RxFifo0MsgPendingCallback(&CAN_RxFIFO1Frame, can_idx1, can1_instance);
     }
-#ifdef USER_CAN2
+#if defined (USER_CAN2)
     if (hcan == &hcan2) {
         USER_CAN_RxFifo0MsgPendingCallback(&CAN_RxFIFO1Frame, can_idx2, can2_instance);
     }
