@@ -2,6 +2,7 @@
 #define MEMORY_MANAGEMENT_H
 #include "robot_config.h"
 #if defined FREERTOS
+#include "cmsis_os.h"
 #define user_malloc pvPortMalloc
 #endif
 
