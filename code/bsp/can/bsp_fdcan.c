@@ -411,8 +411,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
  */
 // ReSharper disable once CppParameterMayBeConst
 void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs) {
-    if (RxFifo1ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
-        HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &FDCAN_RxFIFO1Frame->Header, FDCAN_RxFIFO0Frame->rx_buff);
+    if (RxFifo1ITs & FDCAN_IT_RX_FIFO1_NEW_MESSAGE) {
+        HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &FDCAN_RxFIFO1Frame->Header, FDCAN_RxFIFO1Frame->rx_buff);
 #ifdef USER_CAN1_FIFO_1
         if (hfdcan == &hfdcan1){
             FDCAN_RxFifoCallback(FDCAN_RxFIFO1Frame,idx1, *fdcan1_instance);
