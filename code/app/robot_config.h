@@ -1,5 +1,5 @@
-#ifndef FARME_TEST_ROBOT_CONFIG_H
-#define FARME_TEST_ROBOT_CONFIG_H
+#ifndef ROBOT_CONFIG_H
+#define ROBOT_CONFIG_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -77,4 +77,4 @@
 #if !defined(USER_CAN3) && (defined(USER_CAN3_FIFO_0) || defined(USER_CAN3_FIFO_1))
 #error "未启用 CAN3，但配置了 CAN3 的 FIFO"
 #endif
-#endif //FARME_TEST_ROBOT_CONFIG_H
+#endif //ROBOT_CONFIG_H
