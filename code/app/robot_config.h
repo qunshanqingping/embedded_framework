@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 /* 开发配置 */
-#define BARE_METAL    // 裸机模式
-//#define FREERTOS      // FreeRTOS模式
+// #define BARE_METAL    // 裸机模式
+#define FREERTOS      // FreeRTOS模式
 
 /* 底盘配置 */
 #define MECANUM // 麦克纳姆轮底盘
@@ -21,21 +21,21 @@
 /* CAN配置 */
 
 /* 选择 CAN 类型 */
-// #define USER_CAN_FD
-#define USER_CAN_STD
+#define USER_CAN_FD
+// #define USER_CAN_STD
 /* 选择 CAN 路数 */
 #define USER_CAN1
 #define USER_CAN2
-// #define USER_CAN3
+#define USER_CAN3
 /* 选择 CAN1 使用的 FIFO */
 #define USER_CAN1_FIFO_0
-//#define USER_CAN1_FIFO_1
+#define USER_CAN1_FIFO_1
 /* 选择 CAN2 使用的 FIFO */
 #define USER_CAN2_FIFO_0
-//#define USER_CAN2_FIFO_1
+#define USER_CAN2_FIFO_1
 /* 选择 CAN3 使用的 FIFO */
-// #define USER_CAN3_FIFO_0
-//#define USER_CAN3_FIFO_1
+#define USER_CAN3_FIFO_0
+#define USER_CAN3_FIFO_1
 /* 选择 CAN 过滤器模式 */
 #define USER_CAN_FILTER_MASK_MODE
 // #define USER_CAN_FILTER_LIST_MODE
