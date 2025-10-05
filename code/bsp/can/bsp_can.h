@@ -23,10 +23,7 @@
 /**
  *@brief 数据镇类型
  */
-typedef enum {
-    STD_FARME = 0, // 标准帧
-    EXT_FRAME = 1  // 扩展帧
-}CAN_DataFrameTypeDef;
+
 #pragma pack(1)
 /**
  *@brief CAN实例结构体

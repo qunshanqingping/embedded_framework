@@ -5,7 +5,7 @@
 #include "robot_config.h"
 #ifdef USER_CAN_FD
 #include "fdcan.h"
-
+#include "bsp_typedef.h"
 #define FDCAN_MAX_REGISTER_CNT 16
 
 #pragma pack(1)
@@ -29,6 +29,7 @@ typedef struct
     uint8_t can_number;               //can通道号 1,2,3 分别对应 FDCAN1, FDCAN2, FDCAN3，为了抽象接口向module层隐藏HAL库
     uint16_t tx_id;                    //发送id
     uint16_t rx_id;                    //接收id
+    CAN_DataFrameTypeDef frame_type; //数据帧类型
     void (*can_module_callback)(CanInstance_s *);   //接收的回调函数, 用于解析接收到的数据
     void *parent_ptr;                                   //使用 can 外设的父指针 (即 id 指向的模块拥有此 can 实例, 是父子关系)
 }CanInitConfig_s;

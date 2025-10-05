@@ -1,15 +1,18 @@
 /*
- * @file basic_typedef.h
+ * @file bsp_typedef.h
  * @brief Basic type definitions for the bsp library header file to improve reuse rate
  * @author Adonis Jin
  * @date 2025/08/07
  * @version 1.0.0
  */
 
-#ifndef BASIC_TYPEDEF_H
-#define BASIC_TYPEDEF_H
+#ifndef BSP_TYPEDEF_H
+#define BSP_TYPEDEF_H
 
-
+typedef enum {
+    STD_FRAME = 0, // 标准帧
+    EXT_FRAME = 1  // 扩展帧
+}CAN_DataFrameTypeDef;
 /**
  * @brief Communication peripheral transfer modes
  * @author honor
@@ -62,4 +65,4 @@ typedef enum {
     DOUBLE_BUFFER_MODE = 1   //!< Double buffer mode - two buffers for continuous transfer
 } BufferMode_e;
 
-#endif //BASIC_TYPEDEF_H
+#endif //BSP_TYPEDEF_H

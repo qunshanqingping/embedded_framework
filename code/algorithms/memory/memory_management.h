@@ -4,7 +4,7 @@
 * @brief 内存管理头文件，定义了跨平台的内存分配接口
 * @version 1.0
 * @date 2024-06-20
-/
+*/
 
 #ifndef MEMORY_MANAGEMENT_H
 #define MEMORY_MANAGEMENT_H
@@ -20,4 +20,6 @@
 #if defined BARE_METAL
 // 裸机平台下，user_malloc 映射为标准库 malloc
 #define user_malloc malloc
+#endif
+
 #endif //MEMORY_MANAGEMENT_H
