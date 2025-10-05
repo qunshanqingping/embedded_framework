@@ -18,7 +18,7 @@ typedef struct CanInstance_s
     uint8_t tx_buff[8];                                   // 发送缓存, 可以不用，但建议保留，方便调试
     uint8_t* tx_buff_ptr;
     uint16_t rx_id;                                       // 接收 id, 即接收的 FDCAN 报文 id
-    uint8_t rx_buff[8];                                   // 接收缓存, 目前保留，增加了一次 memcpy 操作，方便调试
+    uint8_t rx_buff[8];                                   // 接收缓存, 目前保留，增加了一次 内存拷贝 操作，方便调试
     void (*can_module_callback)(struct CanInstance_s *); // 接收的回调函数, 用于解析接收到的数据，如果增加了 uint8_t *rx_buff 成员，前面的rx_buff[8] 可以删去
     void *parent_ptr;                                 // 使用 can 外设的模块指针 (即 id 指向的模块拥有此 can 实例, 是父子关系)
 }CanInstance_s;

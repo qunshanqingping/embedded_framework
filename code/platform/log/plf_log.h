@@ -11,8 +11,8 @@
  */
 
 
-#ifndef BSP_LOG_H
-#define BSP_LOG_H
+#ifndef PLF_LOG_H
+#define PLF_LOG_H
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdio.h>
@@ -97,4 +97,4 @@ inline void PrintS_B_Error() {
     Log_Error("      00  00   00");
     Log_Error(" 000000   000000 ");
 }
-#endif /* BSP_LOG_H */
+#endif /* PLF_LOG_H */

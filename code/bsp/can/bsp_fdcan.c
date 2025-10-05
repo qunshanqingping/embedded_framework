@@ -2,7 +2,7 @@
 #ifdef USER_CAN_FD
 #include "bsp_fdcan.h"
 #include "FreeRTOS.h"
-#include "bsp_log.h"
+#include "plf_log.h"
 #include "memory_management.h"
 #include <string.h>
 #include <stdbool.h>
