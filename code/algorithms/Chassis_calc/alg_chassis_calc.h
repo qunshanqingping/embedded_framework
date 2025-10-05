@@ -8,9 +8,9 @@
 /**
  * @brief 底盘电机类型枚举
  */
-typedef enum {    
+typedef enum {
     Omni_Wheel = 0,     ///< 全向轮
-    Mecanum_Wheel = 1,  ///< 麦克纳姆轮  
+    Mecanum_Wheel = 1,  ///< 麦克纳姆轮
     Steering_Wheel = 2, ///< 舵轮
 }CarMotorType;
 
