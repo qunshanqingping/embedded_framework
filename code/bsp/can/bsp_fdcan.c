@@ -1,28 +1,45 @@
+/**
+ * @file bsp_fdcan.c
+ * @author 自动生成
+ * @brief FDCAN（Flexible Data-rate CAN）驱动实现文件
+ * @version 1.0
+ * @date 2025-10-05
+ *
+ * 本文件实现了FDCAN驱动的初始化、注册、收发、回调等功能。
+ * 注释风格统一为Doxygen风格，便于维护和自动文档生成。
+ */
+
 #include "robot_config.h"
 #ifdef USER_CAN_FD
 #include "bsp_fdcan.h"
 #include "FreeRTOS.h"
 #include "plf_log.h"
 #include "memory_management.h"
-
 #include <string.h>
 #include <stdbool.h>
+
 /* 私有类型定义 -----------------------------------------------------------------*/
 
 /* FDCAN 实例声明 */
 #if defined USER_CAN1
 static uint8_t fdcan_idx1; /*!< fdcan1实例索引 */
 static CanInstance_s *fdcan1_instance[FDCAN_MAX_REGISTER_CNT]; /*!< fdcan1实例数组 */
+static uint8_t fdcan1_tx_idx; /*!< fdcan1发送缓存索引 */
+uint8_t fdcan1_tx_buf[FDCAN_MAX_REGISTER_CNT][8]; /*!< fdcan1发送缓存 */
 #endif
 
 #if defined USER_CAN2
 static uint8_t fdcan_idx2; /*!< fdcan2实例索引 */
 static CanInstance_s *fdcan2_instance[FDCAN_MAX_REGISTER_CNT]; /*!< fdcan2实例数组 */
+static uint8_t fdcan2_tx_idx; /*!< fdcan2发送缓存索引 */
+uint8_t fdcan2_tx_buf[FDCAN_MAX_REGISTER_CNT][8]; /*!< fdcan2发送缓存 */
 #endif
 
 #if defined USER_CAN3
 static uint8_t can_idx3; /*!< fdcan3实例索引 */
 static CanInstance_s *fdcan3_instance[FDCAN_MAX_REGISTER_CNT]; /*!< fdcan3实例数组 */
+static uint8_t fdcan3_tx_idx; /*!< fdcan3发送缓存索引 */
+uint8_t fdcan3_tx_buf[FDCAN_MAX_REGISTER_CNT][8]; /*!< fdcan3发送缓存 */
 #endif
 
 /**
@@ -60,7 +77,7 @@ static FDCAN_RxFrame_TypeDef *FDCAN_RxFIFO1Frame;
  */
 FDCAN_FilterTypeDef FDCAN_x_FIFO1_Filter = {
     .IdType = FDCAN_STANDARD_ID, /*!< 标准 ID */
-    .FilterIndex = 0, /*!< 过滤器编号 */
+    .FilterIndex = 1, /*!< 过滤器编号 */
     .FilterType = FDCAN_FILTER_MASK, /*!< 过滤器 Mask 模式 关乎到 ID1ID2 的配置 */
     .FilterConfig = FDCAN_FILTER_TO_RXFIFO1, /*!< 过滤器配置到 FIFO1 */
     .FilterID1 = 0x00000000, /*!< 过滤器 ID1，只要 ID2 配置为 0x00000000，就不会过滤任何 ID */
@@ -81,7 +98,24 @@ FDCAN_TxHeaderTypeDef FDCAN_X_STD_TxFrame = {
     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,/*!< 不存储 Tx events 事件 */
     .MessageMarker = 0,/*!< 消息标记，用户自定义 */
 };
+
+/**
+ * @brief FDCAN 发送扩展帧配置
+ */
+FDCAN_TxHeaderTypeDef FDCAN_X_EXT_TxFrame = {
+    .IdType = FDCAN_EXTENDED_ID,/*!< 扩展 ID */
+    .TxFrameType = FDCAN_DATA_FRAME, /*!< 数据帧 */
+    .DataLength = 8,/*!< 数据长度 8 字节 */
+    .ErrorStateIndicator = FDCAN_ESI_ACTIVE,/*!< 传输节点 error active */
+    .BitRateSwitch = FDCAN_BRS_OFF,/*!< FDCAN 帧发送 / 接收不带波特率可变 */
+    .FDFormat = FDCAN_CLASSIC_CAN,/*<! 设置为经典 CAN 帧格式 */
+    .TxEventFifoControl = FDCAN_NO_TX_EVENTS,/*!< 不存储 Tx events 事件 */
+    .MessageMarker = 0,/*!< 消息标记，用户自定义 */
+};
+
 /* 私有函数 ---------------------------------------------------------------------*/
+
+
 /**
  * @brief 初始化 FDCAN 过滤器配置。
  *
@@ -89,89 +123,84 @@ FDCAN_TxHeaderTypeDef FDCAN_X_STD_TxFrame = {
  * 注意：此函数依赖于 HAL 库提供的 FDCAN 相关 API。
  * @return 如果所有 FDCAN 实例的过滤器配置成功，返回 true；否则返回 false。
  */
-static void FDCAN_Filter_Init(void) {
-#if defined USER_CAN1_FIFO_0
-    /* 配置 CAN1 FIFO0 过滤器 */
+static void FDCAN_Filter_Init(void){
+#ifdef USER_CAN1_FIFO_0
+
     while (HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
         Log_Error("FDCAN1 Fifo0 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN1 Fifo0 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
         Log_Error("FDCAN1 Fifo0 configs fifo watermark failed");
     }
-    /* 激活 FIFO0 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN1 Fifo0 configs interruption failed");
-    }
 #endif
-#if defined USER_CAN1_FIFO_1
-    /* 配置 CAN1 FIFO1 过滤器 */
+#ifdef USER_CAN1_FIFO_1
     while (HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
         Log_Error("FDCAN1 Fifo1 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN1 Fifo1 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
         Log_Error("FDCAN1 Fifo1 configs fifo watermark failed");
     }
-    /* 激活 FIFO1 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN1 Fifo1 configs interruption failed");
-    }
 #endif
-#if defined USER_CAN2_FIFO_0
-    /* 配置 CAN2 FIFO0 过滤器 */
+#ifdef USER_CAN2_FIFO_0
     while (HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
         Log_Error("FDCAN2 Fifo0 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN2 Fifo0 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan2, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
         Log_Error("FDCAN2 Fifo0 configs fifo watermark failed");
     }
-    /* 激活 FIFO0 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN2 Fifo0 configs interruption failed");
-    }
 #endif
-#if defined USER_CAN2_FIFO_1
-    /* 配置 CAN2 FIFO1 过滤器 */
+#ifdef USER_CAN2_FIFO_1
     while (HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
         Log_Error("FDCAN2 Fifo1 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN2 Fifo1 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan2, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
         Log_Error("FDCAN2 Fifo1 configs fifo watermark failed");
     }
-    /* 激活 FIFO1 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN2 Fifo1 configs interruption failed");
-    }
 #endif
-#if defined USER_CAN3_FIFO_0
-    /* 配置 CAN3 FIFO0 过滤器 */
+#ifdef USER_CAN3_FIFO_0
     while (HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
         Log_Error("FDCAN3 Fifo0 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN3 Fifo0 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
         Log_Error("FDCAN3 Fifo0 configs fifo watermark failed");
     }
-    /* 激活 FIFO0 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN3 Fifo1 configs interruption failed");
-    }
 #endif
-#if defined USER_CAN3_FIFO_1
-    /* 配置 CAN3 FIFO1 过滤器 */
+#ifdef USER_CAN3_FIFO_1
     while (HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
         Log_Error("FDCAN3 Fifo1 configs filter failed");
-    }
-    /* 水印中断，接受 1 条消息触发中断 */
+    } // 拒绝接收匹配不成功的标准 ID 和扩展 ID, 不接受远程帧
+    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) !=
+        HAL_OK) {
+        Log_Error("FDCAN3 Fifo1 configs global filter failed");
+        }
+    // 水印中断，接受 1 条消息触发中断
     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
         Log_Error("FDCAN3 Fifo1 configs fifo watermark failed");
-    }
-    /* 激活 FIFO1 新消息中断 */
-    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
-        Log_Error("FDCAN3 Fifo1 configs interruption failed");
     }
 #endif
 }
@@ -183,42 +212,197 @@ static void FDCAN_Filter_Init(void) {
  * 注意：此函数依赖于HAL库提供的FDCAN相关API。
  * @return 无返回值（void）。
  */
-static void FDCAN_Service_Init(void) {
-#if defined USER_CAN1
-    /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
-    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
-           != HAL_OK) {
-        Log_Error("FDCAN1 config global filter failed");
-    }
-    /* 启动 FDCAN1 */
+static void FDCAN_Service_Init(void){
+#ifdef USER_CAN1
     while (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
         Log_Error("FDCAN1 Starts Failed");
     }
 #endif
-#if defined USER_CAN2
-    /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
-    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
-           != HAL_OK) {
-        Log_Error("FDCAN2 config global filter failed");
-    }
-    /* 启动 FDCAN2 */
+#ifdef USER_CAN2
     while (HAL_FDCAN_Start(&hfdcan2) != HAL_OK) {
         Log_Error("FDCAN2 Starts Failed");
     }
 #endif
-#if defined USER_CAN3
-    /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
-    while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
-           != HAL_OK) {
-        Log_Error("FDCAN2 config global filter failed");
-    }
-    /* 启动 FDCAN3 */
+#ifdef USER_CAN3
     while (HAL_FDCAN_Start(&hfdcan3) != HAL_OK) {
         Log_Error("FDCAN3 Starts Failed");
     }
 #endif
+#ifdef USER_CAN1_FIFO_0
+    while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN1 Fifo0 configs interruption failed");
+    }
+#endif
+
+#ifdef USER_CAN1_FIFO_1
+    while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN1 Fifo1 configs interruption failed");
+    }
+#endif
+
+
+#ifdef USER_CAN2_FIFO_0
+    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN2 Fifo0 configs interruption failed");
+    }
+#endif
+
+#ifdef USER_CAN2_FIFO_1
+    while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN2 Fifo1 configs interruption failed");
+    }
+#endif
+
+#ifdef USER_CAN3_FIFO_0
+    while (HAL_FDCAN_ActivateNotification(&hfdcan3,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN3 Fifo0 configs interruption failed");
+    }
+#endif
+#ifdef USER_CAN3_FIFO_1
+    while (HAL_FDCAN_ActivateNotification(&hfdcan3,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+        Log_Error("FDCAN3 Fifo1 configs interruption failed");
+    }
+#endif
 }
 
+
+// /**
+//  * @brief 初始化 FDCAN 过滤器配置。
+//  *
+//  * 该函数根据用户定义的宏（USER_CAN1, USER_CAN2, USER_CAN3）初始化相应的 FDCAN 实例的过滤器。对于每个启用的 FDCAN 实例，它首先确定 ID 类型（标准或扩展），然后选择接收 FIFO（FIFO0 或 FIFO1）。如果两个 FIFO 都没有元素，则记录错误并返回 false。接着，配置过滤器参数，包括 ID 类型、过滤器索引、过滤器类型和过滤器配置。此外，还配置了全局过滤器以拒绝不匹配的标准 ID 和扩展 ID 以及远程帧，并设置了 FIFO 水印中断。如果在配置过程中出现任何错误，将记录错误日志并重试直到成功。
+//  * 注意：此函数依赖于 HAL 库提供的 FDCAN 相关 API。
+//  * @return 如果所有 FDCAN 实例的过滤器配置成功，返回 true；否则返回 false。
+//  */
+// static void FDCAN_Filter_Init(void) {
+// #if defined USER_CAN1_FIFO_0
+//     /* 配置 CAN1 FIFO0 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo0 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo0 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO0 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo0 configs interruption failed");
+//     }
+// #endif
+// #if defined USER_CAN1_FIFO_1
+//     /* 配置 CAN1 FIFO1 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan1, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo1 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan1, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo1 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO1 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN1 Fifo1 configs interruption failed");
+//     }
+// #endif
+// #if defined USER_CAN2_FIFO_0
+//     /* 配置 CAN2 FIFO0 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo0 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan2, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo0 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO0 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo0 configs interruption failed");
+//     }
+// #endif
+// #if defined USER_CAN2_FIFO_1
+//     /* 配置 CAN2 FIFO1 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan2, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo1 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan2, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo1 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO1 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN2 Fifo1 configs interruption failed");
+//     }
+// #endif
+// #if defined USER_CAN3_FIFO_0
+//     /* 配置 CAN3 FIFO0 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_x_FIFO0_Filter) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo0 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO0, 1) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo0 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO0 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan3,FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo1 configs interruption failed");
+//     }
+// #endif
+// #if defined USER_CAN3_FIFO_1
+//     /* 配置 CAN3 FIFO1 过滤器 */
+//     while (HAL_FDCAN_ConfigFilter(&hfdcan3, &FDCAN_x_FIFO1_Filter) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo1 configs filter failed");
+//     }
+//     /* 水印中断，接受 1 条消息触发中断 */
+//     while (HAL_FDCAN_ConfigFifoWatermark(&hfdcan3, FDCAN_CFG_RX_FIFO1, 1) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo1 configs fifo watermark failed");
+//     }
+//     /* 激活 FIFO1 新消息中断 */
+//     while (HAL_FDCAN_ActivateNotification(&hfdcan2,FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK) {
+//         Log_Error("FDCAN3 Fifo1 configs interruption failed");
+//     }
+// #endif
+// }
+//
+// /**
+//  * @brief 初始化CAN服务。
+//  *
+//  * 该函数根据用户配置的宏定义（USER_CAN1, USER_CAN2, USER_CAN3）来初始化相应的FDCAN硬件实例。对于每个启用的FDCAN实例，首先尝试启动它。如果启动失败，则记录错误日志并继续重试直到成功。随后，根据USER_CANx_FIFOx的值选择激活Rx FIFO 0或Rx FIFO 1的消息接收中断通知。如果激活中断通知失败，同样会记录错误日志，并且持续尝试直到成功为止。
+//  * 注意：此函数依赖于HAL库提供的FDCAN相关API。
+//  * @return 无返回值（void）。
+//  */
+// static void FDCAN_Service_Init(void) {
+// #if defined USER_CAN1
+//     /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
+//     while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
+//            != HAL_OK) {
+//         Log_Error("FDCAN1 config global filter failed");
+//     }
+//     /* 启动 FDCAN1 */
+//     while (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+//         Log_Error("FDCAN1 Starts Failed");
+//     }
+// #endif
+// #if defined USER_CAN2
+//     /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
+//     while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
+//            != HAL_OK) {
+//         Log_Error("FDCAN2 config global filter failed");
+//     }
+//     /* 启动 FDCAN2 */
+//     while (HAL_FDCAN_Start(&hfdcan2) != HAL_OK) {
+//         Log_Error("FDCAN2 Starts Failed");
+//     }
+// #endif
+// #if defined USER_CAN3
+//     /* 配置全局过滤器，拒绝所有不匹配的标准ID和扩展ID以及远程帧 */
+//     while (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE)
+//            != HAL_OK) {
+//         Log_Error("FDCAN3 config global filter failed");
+//     }
+//     /* 启动 FDCAN3 */
+//     while (HAL_FDCAN_Start(&hfdcan3) != HAL_OK) {
+//         Log_Error("FDCAN3 Starts Failed");
+//     }
+// #endif
+// }
+//
 
 /**
  * @brief 初始化CAN模块。
@@ -380,7 +564,40 @@ static void FDCAN_RxFifoCallback(const FDCAN_RxFrame_TypeDef *FDCAN_RxFIFOxFrame
         }
     }
 }
-
+static uint8_t* FDCAN_Get_Tx_Buff(const CanInitConfig_s *config) {
+#if defined USER_CAN1
+    if (config->can_number == 1) {
+        for (uint8_t i = 0; i < fdcan_idx1; i++) {
+            if (fdcan1_instance[i]->tx_id == config->tx_id) {
+                return fdcan1_instance[i]->tx_buff_ptr;
+            }
+        }
+        return fdcan1_tx_buf[fdcan1_tx_idx++];
+    }
+#endif
+#if defined USER_CAN2
+    if (config->can_number == 2) {
+        for (uint8_t i = 0; i < fdcan_idx2; i++) {
+            if (fdcan2_instance[i]->tx_id == config->tx_id) {
+                return fdcan2_instance[i]->tx_buff_ptr;
+            }
+        }
+        return fdcan2_tx_buf[fdcan2_tx_idx++];
+    }
+#endif
+#if defined USER_CAN3
+    if (config->can_number == 3) {
+        for (uint8_t i = 0; i < can_idx3; i++) {
+            if (fdcan3_instance[i]->tx_id == config->tx_id) {
+                return fdcan3_instance[i]->tx_buff_ptr;
+            }
+        }
+        return fdcan3_tx_buf[fdcan3_tx_idx++];
+    }
+#endif
+    Log_Error("Can Get Tx Buff Failed");
+    return NULL;
+}
 /* 公共函数 ------------------------------------------------------------------*/
 
 /**
@@ -401,18 +618,23 @@ CanInstance_s *Can_Register(const CanInitConfig_s *config) {
     }
     memset(instance, 0, sizeof(CanInstance_s));
     instance->topic_name = config->topic_name;
+    instance->can_handle = FDCAN_Select_Handle(config->can_number);
     instance->tx_id = config->tx_id;
     instance->rx_id = config->rx_id;
+    instance->tx_buff_ptr = FDCAN_Get_Tx_Buff(config);
+    if (instance->tx_buff_ptr == NULL) {
+        user_free(instance);
+        return NULL;
+    }
     instance->can_module_callback = config->can_module_callback;
-    instance->parent_ptr = config->parent_ptr;
     instance->tx_conf.Identifier = config->tx_id;
-    instance->can_handle = FDCAN_Select_Handle(config->can_number);
     if (config->frame_type == STD_FRAME) {
         instance->tx_conf = FDCAN_X_STD_TxFrame;
     }
-    else {
-
+    else if (config->frame_type == EXT_FRAME) {
+        instance->tx_conf = FDCAN_X_EXT_TxFrame;
     }
+    instance->parent_ptr = config->parent_ptr;
     FDCAN_Register_to_fdcan_x_instance(instance);
     return instance;
 }
@@ -491,6 +713,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     }
 }
 
+#if defined (USER_CAN1_FIFO_1) || defined (USER_CAN2_FIFO_1) || defined (USER_CAN3_FIFO_1)
 /**
  * @brief FDCAN接收FIFO1中断的回调函数。
  *
@@ -520,6 +743,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 #endif
     }
 }
+#endif
 
 //对HAL_FDCAN_ErrorStatusCallback的重载
 //@todo 待完善
