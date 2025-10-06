@@ -31,6 +31,7 @@ typedef struct CanInstance_s
     uint8_t tx_buff[8];                               ///< 发送缓存，便于调试
     uint8_t* tx_buff_ptr;                             ///< 发送缓存指针
     uint16_t rx_id;                                   ///< 接收ID（FDCAN报文ID）
+    uint8_t rx_len;                                   ///< 接收长度，可能为0-8
     uint8_t rx_buff[8];                               ///< 接收缓存，便于调试
     void (*can_module_callback)(struct CanInstance_s *); ///< 接收回调函数，用于解析接收数据
     void *parent_ptr;                                 ///< 使用CAN外设的父模块指针
