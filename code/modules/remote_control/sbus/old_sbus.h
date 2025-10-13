@@ -1,14 +1,15 @@
-#ifndef SBUS_H
-#define SBUS_H
+#ifndef OLD_SBUS_H
+#define OLD_SBUS_H
 #include <stdint.h>
 #include "bsp_usart.h"
 #include "stdbool.h"
 #define SBUS_SIZE 25
+#define size_temp 18
 #define SBUS_SWIRCH_MIDLE_VAL0 0x0400
 
 typedef struct{
     bool online;
-    struct
+     struct
     {
         int16_t ch[10];
     } rc;
@@ -35,4 +36,4 @@ typedef struct{
     UsartInstance_s *usart_instance;
 }I6xInstance_s;
 I6xInstance_s* Sbus_Register(UART_HandleTypeDef *huart);
-#endif //SBUS_H
+#endif //OLD_SBUS_H

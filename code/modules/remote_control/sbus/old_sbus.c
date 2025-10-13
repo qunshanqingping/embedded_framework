@@ -1,11 +1,11 @@
-#include "sbus.h"
+#include "old_sbus.h"
 
 #include "plf_log.h"
 #include "memory_management.h"
 #include <string.h>
 #include "bsp_usart.h"
 
-__attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_buf[2][SBUS_SIZE];
+__attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_buf[2][size_temp] = {0};
 static uint8_t remoter_3stage_switch_parse(const int16_t ch)
 {
     if (ch < SBUS_SWIRCH_MIDLE_VAL0)
@@ -66,7 +66,7 @@ static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
         __HAL_DMA_SET_COUNTER(usart_instance->huart_handle->hdmarx,SBUS_SIZE * 2);
         if(Size == SBUS_SIZE)
         {
-            sbus_frame_parse(usart_instance->first_rx_buf,&i6x_instance->remote_control);
+            // sbus_frame_parse(usart_instance->first_rx_buf,&i6x_instance->remote_control);
         }
     }
     else
@@ -76,7 +76,7 @@ static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
             __HAL_DMA_SET_COUNTER(usart_instance->huart_handle->hdmarx,SBUS_SIZE * 2);
             if(Size == SBUS_SIZE)
             {
-                sbus_frame_parse(usart_instance->second_rx_buf,&i6x_instance->remote_control);
+                // sbus_frame_parse(usart_instance->second_rx_buf,&i6x_instance->remote_control);
             }
         }
     __HAL_DMA_ENABLE(usart_instance->huart_handle->hdmarx);
@@ -125,7 +125,7 @@ I6xInstance_s* Sbus_Register(UART_HandleTypeDef *huart){
     usart_config->huart_handle = huart;
     usart_config->mode = DMA_MODE;
     usart_config->direction = RX_MODE;
-    usart_config->rx_len = SBUS_SIZE;
+    usart_config->rx_len = size_temp;
     usart_config->first_rx_buf = sbus_rx_buf[0];
     usart_config->second_rx_buf = sbus_rx_buf[1];
     usart_config->usart_module_callback = NULL;
