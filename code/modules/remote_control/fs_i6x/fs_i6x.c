@@ -1,3 +1,4 @@
+// ReSharper disable CppParameterMayBeConst
 #include "fs_i6x.h"
 #include "basic_math.h"
 #include "bsp_usart.h"
@@ -16,6 +17,7 @@ __attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_second_buff[SBUS_F
  * @param mid_val 中值
  * @return 开关状态 0,1
  */
+// ReSharper disable once CppDeclaratorNeverUsed
 inline static uint8_t remoter_2stage_switch_parse(int16_t ch, int16_t mid_val){
     if (ch < mid_val){
         return 0;
@@ -66,6 +68,7 @@ static void Sbus_Decode(uint8_t *buffer, I6xData_s* data){
  * @param usart_instance USART实例指针
  * @param Size 接收数据长度
  */
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
 static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
     if (usart_instance == NULL || usart_instance->parent_ptr == NULL || Size > SBUS_FRAME_SIZE)
     {
@@ -80,7 +83,6 @@ static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
         if(Size == SBUS_FRAME_SIZE)
         {
             Sbus_Decode(usart_instance->first_rx_buf,&i6x_instance->data);
-            // sbus_frame_parse(usart_instance->first_rx_buf,&i6x_instance->remote_control);
         }
     }
     else
