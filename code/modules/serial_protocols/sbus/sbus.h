@@ -21,7 +21,6 @@
 typedef enum{
     SBUS_LOST = 0, // 失联
     SBUS_OK, // 正常
-    SBUS_FRAME_ERROR // 帧错误
 } SBUS_Status_e;
 
 typedef struct{
@@ -29,7 +28,13 @@ typedef struct{
     int16_t ch[16];
     uint16_t frequency;
     uint16_t rx_cnt;
-} SBUS_Data_s;
-
+} SbusData_s;
+/**
+ * @brief 解析SBUS数据帧
+ * @param frame SBUS数据结构体指针
+ * @param buffer SBUS数据帧缓冲区指针
+ */
+// ReSharper disable once CppParameterMayBeConstPtrOrRef
+void Sbus_Frame_Parse(SbusData_s* frame, uint8_t* buffer);
 
 #endif //SBUS_H
