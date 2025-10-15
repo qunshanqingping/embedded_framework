@@ -5,7 +5,7 @@
 #include "sbus.h"
 #include "memory_management.h"
 #include "plf_log.h"
-
+#include "watch_dog.h"
 #include <string.h>
 /* 接收缓冲区 */
 __attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_first_buff[SBUS_FRAME_SIZE];
@@ -63,6 +63,13 @@ static void Sbus_Decode(uint8_t *buffer, I6xData_s* data){
     data->sw.b = remoter_3stage_switch_parse(data->rc.ch[7],RC_CH_VALUE_OFFSET);
     data->sw.c = remoter_3stage_switch_parse(data->rc.ch[8],RC_CH_VALUE_OFFSET);
     data->sw.d = remoter_3stage_switch_parse(data->rc.ch[9],RC_CH_VALUE_OFFSET);
+
+    Ramp_Update(&data->rc_data.x_ramp, data->joy.right_x * RC_JOY_TO_VAL_COFE);
+    Ramp_Update(&data->rc_data.y_ramp, data->joy.right_y * RC_JOY_TO_VAL_COFE);
+    Ramp_Update(&data->rc_data.pitch_ramp, data->joy.left_y * RC_JOY_TO_PI_COFE);
+    Ramp_Update(&data->rc_data.yaw_ramp, data->joy.left_x * RC_JOY_TO_PI_COFE);
+    Ramp_Update(&data->rc_data.fine_pitch, data->var.a * RC_JOY_TO_PI_COFE);
+    Ramp_Update(&data->rc_data.fine_yaw, data->var.b * RC_JOY_TO_PI_COFE);
 }
 
 /**
@@ -101,6 +108,12 @@ static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
     __HAL_DMA_ENABLE(usart_instance->huart_handle->hdmarx);
 }
 
+void Monitor_I6x(WatchDogInstance_s * WatchDogInstance_s){
+    I6xInstance_s * instance = (I6xInstance_s *)WatchDogInstance_s->parent_ptr;
+    instance->data.rx_freq.frequency = instance->data.rx_freq.cnt_1s;
+    instance->data.rx_freq.cnt_1s = 0;
+}
+
 /**
  * @brief 注册FS-I6X遥控器实例
  * @param huart UART句柄指针
@@ -108,15 +121,18 @@ static void Sbus_Callback(UsartInstance_s *usart_instance, uint16_t Size){
  */
 I6xInstance_s* I6x_Register(UART_HandleTypeDef *huart){
     UsartInitConfig_s* usart_config = user_malloc(sizeof(UsartInitConfig_s));
+    WatchDogInitConfig_s* watch_dog_config = user_malloc(sizeof(WatchDogInitConfig_s));
     I6xInstance_s* i6x_instance = user_malloc(sizeof(I6xInstance_s));
-    if(usart_config == NULL || i6x_instance == NULL){
-        Log_Error("FS-I6X SbusInstance UartConfig or i6x_instance Malloc Failed");
+    if(usart_config == NULL || i6x_instance == NULL || watch_dog_config == NULL){
+        Log_Error("FS-I6X SbusInstance UartConfig or i6x_instance or watchdog Malloc Failed");
         user_free(usart_config);
         user_free(i6x_instance);
+        user_free(watch_dog_config);
         return NULL;
     }
     memset(usart_config, 0, sizeof(UsartInitConfig_s));
     memset(i6x_instance, 0, sizeof(I6xInstance_s));
+    memset(watch_dog_config, 0, sizeof(WatchDogInitConfig_s));
     usart_config->topic_name = "FS-I6X";
     usart_config->huart_handle = huart;
     usart_config->mode = DMA_MODE;
@@ -130,5 +146,19 @@ I6xInstance_s* I6x_Register(UART_HandleTypeDef *huart){
     i6x_instance->usart_instance = Usart_Register(usart_config);
     user_free(usart_config);
     Usart_RxDMA_DoubleBuffer_Init(i6x_instance->usart_instance);
+
+    watch_dog_config->topic_name = "FS-I6X";
+    watch_dog_config->parent_ptr = i6x_instance;
+    watch_dog_config->watchdog_callback = Monitor_I6x;
+    i6x_instance->watchdog_instance = WatchDog_Register(watch_dog_config);
+    user_free(watch_dog_config);
+
+    Ramp_init(&i6x_instance->data.rc_data.x_ramp,7 );
+    Ramp_init(&i6x_instance->data.rc_data.y_ramp,7 );
+    Ramp_init(&i6x_instance->data.rc_data.pitch_ramp,7 );
+    Ramp_init(&i6x_instance->data.rc_data.yaw_ramp,7 );
+    Ramp_init(&i6x_instance->data.rc_data.fine_pitch,7 );
+    Ramp_init(&i6x_instance->data.rc_data.fine_yaw,7 );
+
     return i6x_instance;
 }
