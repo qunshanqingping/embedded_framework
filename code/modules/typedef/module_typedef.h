@@ -8,7 +8,8 @@
 
 #ifndef MODULE_TYPEDEF_H
 #define MODULE_TYPEDEF_H
-
+#include <stdint.h>
+#include <stdbool.h>
 /**
  * @brief Key status enumeration
  * @author Adonis Jin
@@ -93,8 +94,16 @@ typedef struct
  */
 typedef struct
 {
-    Mouse_s mouse;              //!< Mouse data
-    Keyboard_s keyboard;        //!< Keyboard data
+    Mouse_s mouse;
+    Keyboard_s keyboard;
 } KeyboardMouseOperation_s;
 
+/**
+ * @brief 频率统计结构体
+ * @note 用于统计1秒内的事件次数和计算频率
+ */
+typedef struct{
+    uint16_t cnt_1s;    // 1秒内事件计数
+    uint16_t frequency; // 保存得到的频率
+}Frequency_s;
 #endif //MODULE_TYPEDEF_H
