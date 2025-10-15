@@ -47,16 +47,17 @@ inline static uint8_t remoter_3stage_switch_parse(int16_t ch, int16_t mid_val0){
  */
 static void Sbus_Decode(uint8_t *buffer, I6xData_s* data){
     Sbus_Frame_Parse(&data->rc, buffer);
-    data->joy.right_x = int16_deadline(data->rc.ch[0] - RC_CH_VALUE_OFFSET,
+    data->rx_freq.cnt_1s++;
+    data->joy.right_x = int16_deadline((int16_t)(data->rc.ch[0] - RC_CH_VALUE_OFFSET),
         -REMOTER_DEADLINE,REMOTER_DEADLINE);
-    data->joy.right_y = int16_deadline(data->rc.ch[1] - RC_CH_VALUE_OFFSET,
+    data->joy.right_y = int16_deadline((int16_t)(data->rc.ch[1] - RC_CH_VALUE_OFFSET),
         -REMOTER_DEADLINE,REMOTER_DEADLINE);
-    data->joy.left_y = int16_deadline(data->rc.ch[2] - RC_CH_VALUE_OFFSET,
+    data->joy.left_y = int16_deadline((int16_t)(data->rc.ch[2] - RC_CH_VALUE_OFFSET),
         -REMOTER_DEADLINE,REMOTER_DEADLINE);
-    data->joy.left_x = int16_deadline(data->rc.ch[3] - RC_CH_VALUE_OFFSET,
+    data->joy.left_x = int16_deadline((int16_t)(data->rc.ch[3] - RC_CH_VALUE_OFFSET),
         -REMOTER_DEADLINE,REMOTER_DEADLINE);
-    data->var.a = data->rc.ch[4] - RC_CH_VALUE_OFFSET;
-    data->var.b = data->rc.ch[5] - RC_CH_VALUE_OFFSET;
+    data->var.a = (int16_t)(data->rc.ch[4] - RC_CH_VALUE_OFFSET);
+    data->var.b = (int16_t)(data->rc.ch[5] - RC_CH_VALUE_OFFSET);
     data->sw.a = remoter_3stage_switch_parse(data->rc.ch[6],RC_CH_VALUE_OFFSET);
     data->sw.b = remoter_3stage_switch_parse(data->rc.ch[7],RC_CH_VALUE_OFFSET);
     data->sw.c = remoter_3stage_switch_parse(data->rc.ch[8],RC_CH_VALUE_OFFSET);

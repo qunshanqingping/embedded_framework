@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "sbus.h"
 #include "bsp_usart.h"
+#include "module_typedef.h"
 #define REMOTER_DEADLINE 10  //摇杆死区
 #define RC_CH_VALUE_MIN ((uint16_t)364)
 #define RC_CH_VALUE_OFFSET ((uint16_t)1024)
@@ -10,6 +11,7 @@
 
 typedef struct{
     SbusData_s rc;
+    Frequency_s rx_freq;
     struct{
         int16_t right_x;
         int16_t right_y;
