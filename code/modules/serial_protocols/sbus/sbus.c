@@ -8,7 +8,6 @@
  */
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
 void Sbus_Frame_Parse(SbusData_s* frame, uint8_t* buffer){
-    frame->rx_cnt++;
     uint8_t header = 0;
     uint8_t buffer_temp[SBUS_FRAME_SIZE] = {0};
     if (buffer[0] != SBUS_HEADER || buffer[24] != SBUS_FOOTER){

@@ -26,8 +26,6 @@ typedef enum{
 typedef struct{
     SBUS_Status_e state;
     int16_t ch[16];
-    uint16_t frequency;
-    uint16_t rx_cnt;
 } SbusData_s;
 /**
  * @brief 解析SBUS数据帧
