@@ -31,6 +31,7 @@ inline static uint8_t remoter_2stage_switch_parse(int16_t ch, int16_t mid_val){
  * @param mid_val0 第一个中值
  * @return 开关状态 0,1,2
  */
+// ReSharper disable once CppDeclaratorNeverUsed
 inline static uint8_t remoter_3stage_switch_parse(int16_t ch, int16_t mid_val0){
     if (ch < mid_val0){
         return 0;
