@@ -68,15 +68,10 @@ void float2byte(float* target, unsigned char* buf, unsigned char beg){
 /**
  * @brief 斜坡函数初始化
  * @param instance: 斜坡结构体
- * @param start_value: 初始值
- * @param end_value: 结束值
  * @param frame_period: 两帧之间的间隔时间（单位：毫秒）
  */
-void Ramp_init(RampInstance_s* instance,float start_value,float end_value,uint8_t frame_period){
-    instance->start_value = instance->output_value = start_value;
-    instance->end_value = end_value;
+void Ramp_init(RampInstance_s* instance,uint8_t frame_period){
     instance->frame_period = frame_period;
-    instance->step_value = floatEqual_0((end_value - start_value)) / (float)frame_period;
 }
 
 /**

@@ -113,11 +113,9 @@ typedef struct{
 /**
  * @brief 斜坡函数初始化
  * @param instance: 斜坡结构体
- * @param start_value: 初始值
- * @param end_value: 结束值
  * @param frame_period: 两帧之间的间隔时间（单位：毫秒）
  */
-void Ramp_init(RampInstance_s* instance,float start_value,float end_value,uint8_t frame_period);
+void Ramp_init(RampInstance_s* instance,uint8_t frame_period);
 /**
  * @brief 斜坡函数更新
  * @param instance: 斜坡结构体
