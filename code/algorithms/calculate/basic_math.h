@@ -68,7 +68,7 @@ do { \
 #define toggleBit(value, pos) ((value) ^ (1 << (pos)))
 
 long map(long, long, long, long, long);
-int floatEqual_0(float num);
+float floatEqual_0(float num);
 
 #define IndexOutofBounds(index, length) ((index) < 0 || (index) > (length) - 1)
 
@@ -96,4 +96,38 @@ typedef union // 浮点数 与16进制转换联合体
     unsigned char data[4];
 } hex_float_u;
 
+/**
+ * @brief 斜坡函数实例结构体
+ * @note 用于实现数值的线性变化，适用于需要平滑过渡的场景
+ */
+typedef struct{
+    float output_value;      //输出值
+    float step_value;        //1毫秒步长
+    float start_value;       //初始值
+    float end_value;         //结束值
+    uint8_t loop_count;      //计数
+    uint8_t frame_period;    //时间间隔, 单位：毫秒
+}RampInstance_s;
+
+
+/**
+ * @brief 斜坡函数初始化
+ * @param instance: 斜坡结构体
+ * @param start_value: 初始值
+ * @param end_value: 结束值
+ * @param frame_period: 两帧之间的间隔时间（单位：毫秒）
+ */
+void Ramp_init(RampInstance_s* instance,float start_value,float end_value,uint8_t frame_period);
+/**
+ * @brief 斜坡函数更新
+ * @param instance: 斜坡结构体
+ * @param update_value: 更新的目标值
+ */
+void Ramp_Update(RampInstance_s* instance, float update_value);
+/**
+ * @brief 斜坡函数读取
+ * @param instance: 斜坡结构体
+ * @return 当前输出值
+ */
+float Ramp_Read(RampInstance_s* instance);
 #endif // BASIC_MATH_H

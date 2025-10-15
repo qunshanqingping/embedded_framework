@@ -42,10 +42,10 @@ long map(long x, long in_min, long in_max, long out_min, long out_max){
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-int floatEqual_0(const float num){
+float floatEqual_0(const float num){
     //用于处理判断float变量是否为0
     if (num < (float)FLOAT_ZERO){
-        return 1;
+        return num;
     }
     return 0;
 }
@@ -63,4 +63,45 @@ void float2byte(float* target, unsigned char* buf, unsigned char beg){
     buf[beg + 1] = point[1];
     buf[beg + 2] = point[2];
     buf[beg + 3] = point[3];
+}
+
+/**
+ * @brief 斜坡函数初始化
+ * @param instance: 斜坡结构体
+ * @param start_value: 初始值
+ * @param end_value: 结束值
+ * @param frame_period: 两帧之间的间隔时间（单位：毫秒）
+ */
+void Ramp_init(RampInstance_s* instance,float start_value,float end_value,uint8_t frame_period){
+    instance->start_value = instance->output_value = start_value;
+    instance->end_value = end_value;
+    instance->frame_period = frame_period;
+    instance->step_value = floatEqual_0((end_value - start_value)) / (float)frame_period;
+}
+
+/**
+ * @brief 斜坡函数更新
+ * @param instance: 斜坡结构体
+ * @param update_value: 更新的目标值
+ */
+void Ramp_Update(RampInstance_s* instance, float update_value){
+    instance->start_value = instance->output_value = instance->end_value;
+    instance->end_value = update_value;
+    instance->step_value = floatEqual_0((instance->end_value - instance->start_value)) / (float)instance->frame_period;
+    instance->loop_count = 0;
+}
+/**
+ * @brief 斜坡函数读取
+ * @param instance: 斜坡结构体
+ * @return 当前输出值
+ */
+float Ramp_Read(RampInstance_s* instance){
+    if (instance->loop_count < instance->frame_period){
+        instance->output_value += instance->step_value;
+        instance->loop_count++;
+    }
+    else{
+        instance->output_value = instance->end_value;
+    }
+    return instance->output_value;
 }
