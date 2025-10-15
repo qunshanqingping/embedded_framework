@@ -2,6 +2,3 @@
 /.idea/copilot.data.migration.ask2agent.xml
 /.idea/copilot.data.migration.edit.xml
 /.idea/copilot.data.migration.ask.xml
-/code/app/
-/code/config/
-/code/config/robot_config.h
