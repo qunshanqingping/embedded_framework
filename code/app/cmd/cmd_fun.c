@@ -1,0 +1,39 @@
+#include "cmd_fun.h"
+#include "fs_i6x.h"
+#include "basic_math.h"
+#include "cmsis_os.h"
+RcCmd_s rc_cmd;
+I6xInstance_s* i6x;
+
+void USER_CMD_Init(void)
+{
+    i6x = I6x_Register(&huart5);
+}
+
+void Cmd_Read(void){
+    rc_cmd.data.x_val = Ramp_Read(&i6x->data.rc_data.x_ramp);
+    rc_cmd.data.y_val = Ramp_Read(&i6x->data.rc_data.y_ramp);
+    rc_cmd.data.pitch_pos = Ramp_Read(&i6x->data.rc_data.pitch_ramp);
+    rc_cmd.data.yaw_pos = Ramp_Read(&i6x->data.rc_data.yaw_ramp);
+    rc_cmd.data.fine_yaw_pos = Ramp_Read(&i6x->data.rc_data.fine_yaw);
+    rc_cmd.data.fine_pitch_pos = Ramp_Read(&i6x->data.rc_data.fine_pitch);
+}
+
+/* USER CODE BEGIN Header_cmd_task */
+/**
+* @brief Function implementing the cmd thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_cmd_task */
+ void cmd_task(void const * argument)
+{
+    /* USER CODE BEGIN cmd_task */
+    /* Infinite loop */
+    for(;;)
+    {
+        Cmd_Read();
+        osDelay(1);
+    }
+    /* USER CODE END cmd_task */
+}
