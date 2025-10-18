@@ -16,7 +16,7 @@ static void MOTOR_Dji_Decode( CanInstance_s *can_instance) {
             = (uint16_t) (can_instance->rx_buff[4] << 8 | can_instance->rx_buff[5]);
     motor_instance->message.rotor_temp   // 电机温度
             = can_instance->rx_buff[6];
-
+    motor_instance.message.rx_cnt++;
 }
 /**
  * @brief 配置CAN模块

@@ -17,6 +17,9 @@ void Cmd_Read(void){
     rc_cmd.data.yaw_pos = Ramp_Read(&i6x->data.rc_data.yaw_ramp);
     rc_cmd.data.fine_yaw_pos = Ramp_Read(&i6x->data.rc_data.fine_yaw);
     rc_cmd.data.fine_pitch_pos = Ramp_Read(&i6x->data.rc_data.fine_pitch);
+    rc_cmd.state.cmd_state = i6x->data.sw.b;
+    rc_cmd.state.chassis_state = i6x->data.sw.c;
+    rc_cmd.state.gimbal_state = i6x->data.sw.d;
 }
 
 /* USER CODE BEGIN Header_cmd_task */

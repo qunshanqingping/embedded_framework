@@ -80,9 +80,9 @@ void Ramp_init(RampInstance_s* instance,uint8_t frame_period){
  * @param update_value: 更新的目标值
  */
 void Ramp_Update(RampInstance_s* instance, float update_value){
-    instance->start_value = instance->output_value = instance->end_value;
+    instance->start_value = instance->end_value;
     instance->end_value = update_value;
-    instance->step_value = floatEqual_0((instance->end_value - instance->start_value)) / (float)instance->frame_period;
+    instance->step_value = (instance->end_value - instance->start_value) / (float)instance->frame_period;
     instance->loop_count = 0;
 }
 /**
