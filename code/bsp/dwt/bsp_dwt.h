@@ -1,17 +1,37 @@
 /**
-* @file bsp_dwt.c
- * @brief 更精确的延时函数和系统时间功能实现
- * @author Adonis Jin
- * @date 2025-7-27
- * @version 1.0
- * @note  实现基本功能
- * @date 2025-8-26
- * @version 1.1
- * @note 规范命名；修改Dwt_Init函数，无需传入频率参数；修改延时函数，不使用float进行时间计算
+ ******************************************************************************
+ * @file	bsp_dwt.h
+ * @author  Wang Hongxi
+ * @version V1.1.0
+ * @date    2022/3/8
+ * @brief
+ ******************************************************************************
+ * @attention
+ *
+ ******************************************************************************
  */
-#ifndef __BSP_DWT_H
-#define __BSP_DWT_H
+#ifndef _BSP_DWT_H
+#define _BSP_DWT_H
+
 
 #include "stdint.h"
 
-#endif /* __BSP_DWT_H */
+typedef struct
+{
+    uint32_t s;
+    uint16_t ms;
+    uint16_t us;
+} DWT_Time_t;
+
+void DWT_Init(uint32_t CPU_Freq_mHz);
+float DWT_GetDeltaT(uint32_t *cnt_last);
+double DWT_GetDeltaT64(uint32_t *cnt_last);
+float DWT_GetTimeline_s(void);
+float DWT_GetTimeline_ms(void);
+uint64_t DWT_GetTimeline_us(void);
+void DWT_Delay(float Delay);
+void DWT_SysTimeUpdate(void);
+
+extern DWT_Time_t SysTime;
+
+#endif /* BSP_DWT_H_ */
