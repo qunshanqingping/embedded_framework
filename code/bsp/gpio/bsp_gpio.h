@@ -30,12 +30,12 @@ GpioInstance_s * Gpio_Register(GpioInitConfig_s *config);
  * @brief 设置 GPIO 引脚为高电平
  * @param instance GPIO 实例指针
  */
-void Gpio_Set_High(GpioInstance_s *instance);
+void Gpio_Set(GpioInstance_s *instance);
 
 /**
  * @brief 设置 GPIO 引脚为低电平
  * @param instance GPIO 实例指针
  */
-void Gpio_Set_Low(GpioInstance_s *instance);
+void Gpio_Reset(GpioInstance_s *instance);
 
 #endif //BSP_GPIO_H
