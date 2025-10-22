@@ -15,13 +15,11 @@
 #include "stdlib.h"
 #include "FreeRTOS.h"
 #include "plf_log.h"
+#include "memory_management.h"
 /* 私有变量 -----------------------------------------------------------------*/
-//
-// /**
-//  * @brief 用于存储 SPI 实例指针的数组同时用于在执行回调操作时确定中断的来源
-//  */
-// static SpiInstance_s *spi_instances[SPI_DEVICE_CNT*MX_SPI_BUS_SLAVE_CNT]={NULL};
-//
+
+static SpiInstance_s *spi_instances[SPI_DEVICE_CNT]={NULL};
+static uint8_t spi_idx = 0;
 // /**
 //  * 配合中断以及初始化
 //  */
@@ -34,11 +32,46 @@
 //  */
 // // uint8_t SPIDeviceOnGoing[SPI_DEVICE_CNT] = {1};
 //
-// /* 私有函数原型 -------------------------------------------------------------*/
-//
-//
-// /* 函数定义 ------------------------------------------------------------------*/
-//
+static bool Spi_Register_Check(SpiInitConfig_s *config)
+{
+    if (config == NULL)
+    {
+        Log_Error("Spi_Register_Check: config is NULL");
+        return false;
+    }
+if (config->topic_name == NULL)
+    {
+        Log_Error("Spi_Register_Check: topic_name is NULL");
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @file bsp_spi.c
+ * @brief SPI 实例注册函数
+ * @param config SPI 初始化配置结构体指针
+ * @return instance 指针 -- 注册成功   NULL-- 注册失败
+ */
+SpiInstance_s* Spi_Register(SpiInitConfig_s* config){
+    if (Spi_Register_Check(config) == false){
+        return NULL;
+    }
+    SpiInstance_s* instance = user_malloc(sizeof(SpiInstance_s));
+    if (instance == NULL){
+        Log_Error("Spi_Register: %s Malloc Failed",config->topic_name);
+        return NULL;
+    }
+    memset(instance, 0, sizeof(SpiInstance_s));
+    instance->topic_name = config->topic_name;
+    instance->mode = config->mode;
+    instance->spi_handle = config->spi_handle;
+    instance->cs_port = config->cs_port;
+    instance->cs_pin = config->cs_pin;
+    instance->timeout = config->timeout;
+    spi_instances[spi_idx++] = instance;
+    return instance;
+}
 // /**
 //  * @file bsp_spi.c
 //  * @brief SPI 实例注册函数
@@ -370,6 +403,37 @@ void Spi_Transmit(SpiInstance_s* instance, uint8_t* tx_data, uint16_t tx_len){
 //     return true; // 发送接收成功
 // }
 //
+/**
+ * @brief SPI 发送接收数据函数
+ * @param instance SPI 实例指针
+ * @param tx_data 发送数据指针
+ * @param rx_data 接收数据指针
+ * @param len 数据长度
+ * @param timeout 超时时间
+ */
+void Spi_TransmitReceive(SpiInstance_s * instance, uint8_t* tx_data, uint8_t* rx_data, uint16_t len,uint16_t timeout){
+    if (instance == NULL || tx_data == NULL || rx_data == NULL || len == 0){
+        Log_Error("Spi_TransmitReceive Fail : Invalid Parameter");
+        return ;
+    }
+    switch (instance->mode){
+        case BLOCK_MODE: {
+            HAL_SPI_TransmitReceive(instance->spi_handle, tx_data, rx_data, len,timeout);
+            break;
+        }
+        case DMA_MODE: {
+            HAL_SPI_TransmitReceive_DMA(instance->spi_handle, tx_data, rx_data, len);
+            break;
+        }
+        case IT_MODE:{
+            HAL_SPI_TransmitReceive_IT(instance->spi_handle, tx_data, rx_data, len);
+            break;
+        }
+        default: {
+            Log_Error("Spi_TransmitReceive Fail : Invalid Transfer Mode");
+        }
+    }
+}
 // /**
 //  * @brief SPI 接收完成回调函数
 //  * @param hspi SPI 句柄
