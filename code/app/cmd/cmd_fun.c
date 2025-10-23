@@ -2,11 +2,17 @@
 #include "fs_i6x.h"
 #include "basic_math.h"
 #include "cmsis_os.h"
+#include "bmi088.h"
 RcCmd_s rc_cmd;
 I6xInstance_s* i6x;
-
+float accel_data[3];
+float gyro_data[3];
+float temperature;
+extern Bmi088Instance_s *bmi088_Instance;
 void USER_CMD_Init(void)
 {
+    Bmi088_Init(&hspi2);
+    BMI088_Init();
     i6x = I6x_Register(&huart5);
 }
 
@@ -35,6 +41,7 @@ void Cmd_Read(void){
     /* Infinite loop */
     for(;;)
     {
+        BMI088_read(accel_data, gyro_data, &temperature);
         Cmd_Read();
         osDelay(1);
     }
