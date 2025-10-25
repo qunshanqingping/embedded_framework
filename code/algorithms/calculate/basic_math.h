@@ -2,7 +2,7 @@
 #define BASIC_MATH_H
 
 #include <stdint.h>
-
+#include <math.h>
 #define max(x, y) ({     \
     typeof(x) _x = (x);  \
     typeof(y) _y = (y);  \
@@ -11,6 +11,7 @@
 })
 
 /* 角度转换宏 */
+#define RPM_TO_RADS   0.10471975511965977461 // RPM转弧度每秒
 // 转换到0-2PI
 #define constrain_0_2pi(amt) (((amt) > 2 * PI) ? ((amt) -= 2 * PI) : (((amt) < 0) ? ((amt) += 2 * PI) : (amt)))
 // 转换到-pi-pi
@@ -128,4 +129,16 @@ void Ramp_Update(RampInstance_s* instance, float update_value);
  * @return 当前输出值
  */
 float Ramp_Read(RampInstance_s* instance);
+
+
+/**
+ * @brief 线性映射函数
+ * @param x: 输入值
+ * @param in_min: 输入值最小值
+ * @param in_max: 输入值最大值
+ * @param out_min: 输出值最小值
+ * @param out_max: 输出值最大值
+ * @return 映射后的值
+ */
+long map(long x, long in_min, long in_max, long out_min, long out_max);
 #endif // BASIC_MATH_H

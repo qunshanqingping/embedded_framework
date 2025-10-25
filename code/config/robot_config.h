@@ -20,7 +20,7 @@
 /* CAN配置 */
 
 /* 选择 CAN 类型 */
-// #define USER_CAN_FD
+#define USER_CAN_FD
 // #define USER_CAN_STD
 /* 选择 CAN 路数 */
 #define USER_CAN1
