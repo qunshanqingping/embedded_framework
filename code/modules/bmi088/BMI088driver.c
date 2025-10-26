@@ -105,7 +105,7 @@ static uint8_t Gyro_Read_Single_Reg(uint8_t reg){
     uint8_t tx_buf[3] = {0};
     uint8_t rx_buf[3] = {0};
     tx_buf[0] = reg| 0x80;
-    Spi_TransmitReceive(bmi088->gyro,tx_buf,rx_buf,4,1000);
+    Spi_TransmitReceive(bmi088->gyro,tx_buf,rx_buf,2,1000);
     return rx_buf[1];
 }
 

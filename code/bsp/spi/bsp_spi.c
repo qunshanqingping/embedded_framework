@@ -253,6 +253,9 @@ void Spi_Transmit(SpiInstance_s* instance, uint8_t* tx_data, uint16_t tx_len){
         Log_Error("Spi_Transmit Fail : Invalid Parameter");
         return ;
     }
+    if (instance->cs_port != NULL){
+        HAL_GPIO_WritePin(instance->cs_port,instance->cs_pin,GPIO_PIN_RESET);
+    }
     switch (instance->mode){
     case BLOCK_MODE: {
         HAL_SPI_Transmit(instance->spi_handle, tx_data, tx_len, SPI_TIMEOUT_MS);
@@ -269,6 +272,9 @@ void Spi_Transmit(SpiInstance_s* instance, uint8_t* tx_data, uint16_t tx_len){
     default: {
         Log_Error("Spi_Transmit Fail : Invalid Transfer Mode");
     }
+    }
+    if (instance->cs_port != NULL){
+        HAL_GPIO_WritePin(instance->cs_port,instance->cs_pin,GPIO_PIN_SET);
     }
 }
 
@@ -413,8 +419,11 @@ void Spi_Transmit(SpiInstance_s* instance, uint8_t* tx_data, uint16_t tx_len){
  */
 void Spi_TransmitReceive(SpiInstance_s * instance, uint8_t* tx_data, uint8_t* rx_data, uint16_t len,uint16_t timeout){
     if (instance == NULL || tx_data == NULL || rx_data == NULL || len == 0){
-        Log_Error("Spi_TransmitReceive Fail : Invalid Parameter");
+        Log_Error("Spi_TransmitReceive : Invalid Parameter");
         return ;
+    }
+    if (instance->cs_port != NULL){
+        HAL_GPIO_WritePin(instance->cs_port,instance->cs_pin,GPIO_PIN_RESET);
     }
     switch (instance->mode){
         case BLOCK_MODE: {
@@ -432,6 +441,9 @@ void Spi_TransmitReceive(SpiInstance_s * instance, uint8_t* tx_data, uint8_t* rx
         default: {
             Log_Error("Spi_TransmitReceive Fail : Invalid Transfer Mode");
         }
+    }
+    if (instance->cs_port != NULL){
+        HAL_GPIO_WritePin(instance->cs_port,instance->cs_pin,GPIO_PIN_SET);
     }
 }
 // /**
