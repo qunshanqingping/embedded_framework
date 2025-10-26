@@ -1,135 +1,134 @@
 #include "BMI088driver.h"
 #include "BMI088reg.h"
 #include "BMI088Middleware.h"
-
+#include "bsp_spi.h"
+#include "memory_management.h"
+#include "memory.h"
+#include "plf_log.h"
+#include "string.h"
+#define BMI088_USING_SPI_UNIT hspi2
 
 float BMI088_ACCEL_SEN = BMI088_ACCEL_3G_SEN;
 float BMI088_GYRO_SEN = BMI088_GYRO_2000_SEN;
-
-
-
-#if defined(BMI088_USE_SPI)
-/**
-************************************************************************
-* @brief:      	BMI088_accel_write_single_reg(reg, data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-*               data - –¥»Îµƒ ˝æ›
-* @retval:     	void
-* @details:    	Õ®π˝BMI088º”ÀŸ∂»º∆µƒSPI◊‹œﬂ–¥»Îµ•∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_accel_write_single_reg(reg, data) \
-    {                                            \
-        BMI088_ACCEL_NS_L();                     \
-        BMI088_write_single_reg((reg), (data));  \
-        BMI088_ACCEL_NS_H();                     \
+static Bmi088Instance_s* bmi088;
+static Bmi088InitConfig_s bmi088_config = {
+    .accel = {
+        .topic_name = "accel",
+        .spi_handle = &BMI088_USING_SPI_UNIT,
+        .cs_port = ACC_CS_GPIO_Port,
+        .cs_pin = ACC_CS_Pin,
+        .mode = BLOCK_MODE,
+        .timeout = 1000,
+    },
+    .gyro = {
+        .topic_name = "gyro",
+        .spi_handle = &BMI088_USING_SPI_UNIT,
+        .cs_port = GYRO_CS_GPIO_Port,
+        .cs_pin = GYRO_CS_Pin,
+        .mode = BLOCK_MODE,
+        .timeout = 1000,
     }
-/**
-************************************************************************
-* @brief:      	BMI088_accel_read_single_reg(reg, data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-*               data - ∂¡»°µƒºƒ¥Ê∆˜ ˝æ›
-* @retval:     	void
-* @details:    	Õ®π˝BMI088º”ÀŸ∂»º∆µƒSPI◊‹œﬂ∂¡»°µ•∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_accel_read_single_reg(reg, data) \
-    {                                           \
-        BMI088_ACCEL_NS_L();                    \
-        BMI088_read_write_byte((reg) | 0x80);   \
-        BMI088_read_write_byte(0x55);           \
-        (data) = BMI088_read_write_byte(0x55);  \
-        BMI088_ACCEL_NS_H();                    \
-    }
-/**
-************************************************************************
-* @brief:      	BMI088_accel_read_muli_reg(reg, data, len)
-* @param:       reg - ∆ ººƒ¥Ê∆˜µÿ÷∑
-*               data - ¥Ê¥¢∂¡»° ˝æ›µƒª∫≥Â«¯
-*               len - “™∂¡»°µƒ◊÷Ω⁄ ˝
-* @retval:     	void
-* @details:    	Õ®π˝BMI088º”ÀŸ∂»º∆µƒSPI◊‹œﬂ¡¨–¯∂¡»°∂‡∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_accel_read_muli_reg(reg, data, len) \
-    {                                              \
-        BMI088_ACCEL_NS_L();                       \
-        BMI088_read_write_byte((reg) | 0x80);      \
-        BMI088_read_muli_reg(reg, data, len);      \
-        BMI088_ACCEL_NS_H();                       \
-    }
-/**
-************************************************************************
-* @brief:      	BMI088_gyro_write_single_reg(reg, data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-*               data - –¥»Îµƒ ˝æ›
-* @retval:     	void
-* @details:    	Õ®π˝BMI088Õ”¬›“«µƒSPI◊‹œﬂ–¥»Îµ•∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_gyro_write_single_reg(reg, data) \
-    {                                           \
-        BMI088_GYRO_NS_L();                     \
-        BMI088_write_single_reg((reg), (data)); \
-        BMI088_GYRO_NS_H();                     \
-    }
-/**
-************************************************************************
-* @brief:      	BMI088_gyro_read_single_reg(reg, data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-*               data - ∂¡»°µƒºƒ¥Ê∆˜ ˝æ›
-* @retval:     	void
-* @details:    	Õ®π˝BMI088Õ”¬›“«µƒSPI◊‹œﬂ∂¡»°µ•∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_gyro_read_single_reg(reg, data)  \
-    {                                           \
-        BMI088_GYRO_NS_L();                     \
-        BMI088_read_single_reg((reg), &(data)); \
-        BMI088_GYRO_NS_H();                     \
-    }
-/**
-************************************************************************
-* @brief:      	BMI088_gyro_read_muli_reg(reg, data, len)
-* @param:       reg - ∆ ººƒ¥Ê∆˜µÿ÷∑
-*               data - ¥Ê¥¢∂¡»° ˝æ›µƒª∫≥Â«¯
-*               len - “™∂¡»°µƒ◊÷Ω⁄ ˝
-* @retval:     	void
-* @details:    	Õ®π˝BMI088Õ”¬›“«µƒSPI◊‹œﬂ¡¨–¯∂¡»°∂‡∏ˆºƒ¥Ê∆˜µƒ∫Í∂®“Â
-************************************************************************
-**/
-#define BMI088_gyro_read_muli_reg(reg, data, len)   \
-    {                                               \
-        BMI088_GYRO_NS_L();                         \
-        BMI088_read_muli_reg((reg), (data), (len)); \
-        BMI088_GYRO_NS_H();                         \
-    }
+};
 
-static void BMI088_write_single_reg(uint8_t reg, uint8_t data);
-static void BMI088_read_single_reg(uint8_t reg, uint8_t *return_data);
-//static void BMI088_write_muli_reg(uint8_t reg, uint8_t* buf, uint8_t len );
-static void BMI088_read_muli_reg(uint8_t reg, uint8_t *buf, uint8_t len);
+Bmi088Instance_s* Bmi088_Register(Bmi088InitConfig_s* config){
+    if (config == NULL){
+        Log_Error("Bmi088_Register : config is NULL");
+        return NULL;
+    }
+    Bmi088Instance_s* instance = (Bmi088Instance_s*)user_malloc(sizeof(Bmi088Instance_s));
+    if (instance == NULL){
+        Log_Error("Bmi088_Register : instance Malloc Failed");
+        return NULL;
+    }
+    memset(instance, 0, sizeof(Bmi088Instance_s));
+    instance->accel = Spi_Register(&config->accel);
+    instance->gyro = Spi_Register(&config->gyro);
+    if (instance->accel == NULL || instance->gyro == NULL){
+        Log_Error("Bmi088_Register : Spi_accel or Spi_gyro Malloc Failed");
+        user_free(instance);
+        return NULL;
+    }
+    return instance;
+}
 
-#elif defined(BMI088_USE_IIC)
+/**
+ * @brief          ËØªÂèñBMI088ÂØÑÂ≠òÂô®Accel. BMI088Ë¶ÅÊ±ÇÂú®‰∏çÈáäÊîæCSÁöÑÊÉÖÂÜµ‰∏ãËøûÁª≠ËØªÂèñ
+ * @param reg      ÂØÑÂ≠òÂô®Âú∞ÂùÄ
+ * @param rx_buf   Â≠òÂÇ®ËØªÂèñÊï∞ÊçÆÁöÑÁºìÂÜ≤Âå∫
+ */
+static void Accel_Read(uint8_t reg, uint8_t* rx_buf ,uint8_t len){
+    uint8_t tx_buf[8] = {0};
+    tx_buf[0] = reg | 0x80;
+    Spi_TransmitReceive(bmi088->accel, tx_buf, rx_buf, len+2, 1000);
+}
+
+/**
+ * @brief          ËØªÂèñBMI088ÂØÑÂ≠òÂô®Gyro. BMI088Ë¶ÅÊ±ÇÂú®‰∏çÈáäÊîæCSÁöÑÊÉÖÂÜµ‰∏ãËøûÁª≠ËØªÂèñ
+ * @param reg      ÂØÑÂ≠òÂô®Âú∞ÂùÄ
+ * @param rx_buf   Â≠òÂÇ®ËØªÂèñÊï∞ÊçÆÁöÑÁºìÂÜ≤Âå∫
+ */
+static void Gyro_Read(uint8_t reg, uint8_t* rx_buf){
+    uint8_t tx_buf[9] = {0};
+    tx_buf[0] = reg | 0x80;
+    Spi_TransmitReceive(bmi088->gyro, tx_buf, rx_buf, 9, 1000);
+}
+
+/**
+ * @brief Âçï‰∏™ÂÜôÂÖ•Âä†ÈÄüÂ∫¶ËÆ°ÁöÑÂØÑÂ≠òÂô®
+ * @param reg  ÂØÑÂ≠òÂô®Âú∞ÂùÄ
+ * @param data ÂÜôÂÖ•ÁöÑÊï∞ÊçÆ
+ */
+static void Accel_Write_Single_Reg(uint8_t reg , uint8_t data){
+    uint8_t tx_buf[2] = {reg , data};
+    Spi_Transmit(bmi088->accel,tx_buf,2);
+}
+
+/**
+ * @brief Âçï‰∏™ÂÜôÂÖ•ÈôÄËû∫‰ª™ÁöÑÂØÑÂ≠òÂô®
+ * @param reg   ÂØÑÂ≠òÂô®Âú∞ÂùÄ
+ * @param data  ÂÜôÂÖ•ÁöÑÊï∞ÊçÆ
+ */
+static void Gyro_Write_Single_Reg(uint8_t reg , uint8_t data){
+    uint8_t tx_buf[2] = {reg, data};
+    Spi_Transmit(bmi088->gyro,tx_buf,2);
+}
+
+static uint8_t Accel_Read_Single_Reg(uint8_t reg){
+    uint8_t tx_buf[3] = {0};
+    tx_buf[0] = reg| 0x80;
+    uint8_t rx_buf[3] = {0};
+    Spi_TransmitReceive(bmi088->accel,tx_buf,rx_buf,3,1000);
+    return   rx_buf[2];
+}
+
+static uint8_t Gyro_Read_Single_Reg(uint8_t reg){
+    uint8_t tx_buf[3] = {0};
+    uint8_t rx_buf[3] = {0};
+    tx_buf[0] = reg| 0x80;
+    Spi_TransmitReceive(bmi088->gyro,tx_buf,rx_buf,4,1000);
+    return rx_buf[1];
+}
 
 
-#endif
 /**
 ************************************************************************
 * @brief:      	write_BMI088_accel_reg_data_error_init(void)
 * @param:       void
 * @retval:     	void
-* @details:    	BMI088º”ÀŸ∂»¥´∏–∆˜ºƒ¥Ê∆˜ ˝æ›–¥»Î¥ÌŒÛ¥¶¿Ì≥ı ºªØ
+* @details:    	BMI088Âä†ÈÄüÂ∫¶‰º†ÊÑüÂô®ÂØÑÂ≠òÂô®Êï∞ÊçÆÂÜôÂÖ•ÈîôËØØÂ§ÑÁêÜÂàùÂßãÂåñ
 ************************************************************************
 **/
 static uint8_t write_BMI088_accel_reg_data_error[BMI088_WRITE_ACCEL_REG_NUM][3] =
+{
+    {BMI088_ACC_PWR_CTRL, BMI088_ACC_ENABLE_ACC_ON, BMI088_ACC_PWR_CTRL_ERROR},
+    {BMI088_ACC_PWR_CONF, BMI088_ACC_PWR_ACTIVE_MODE, BMI088_ACC_PWR_CONF_ERROR},
+    {BMI088_ACC_CONF, BMI088_ACC_NORMAL | BMI088_ACC_800_HZ | BMI088_ACC_CONF_MUST_Set, BMI088_ACC_CONF_ERROR},
+    {BMI088_ACC_RANGE, BMI088_ACC_RANGE_3G, BMI088_ACC_RANGE_ERROR},
     {
-        {BMI088_ACC_PWR_CTRL, BMI088_ACC_ENABLE_ACC_ON, BMI088_ACC_PWR_CTRL_ERROR},
-        {BMI088_ACC_PWR_CONF, BMI088_ACC_PWR_ACTIVE_MODE, BMI088_ACC_PWR_CONF_ERROR},
-        {BMI088_ACC_CONF,  BMI088_ACC_NORMAL| BMI088_ACC_800_HZ | BMI088_ACC_CONF_MUST_Set, BMI088_ACC_CONF_ERROR},
-        {BMI088_ACC_RANGE, BMI088_ACC_RANGE_3G, BMI088_ACC_RANGE_ERROR},
-        {BMI088_INT1_IO_CTRL, BMI088_ACC_INT1_IO_ENABLE | BMI088_ACC_INT1_GPIO_PP | BMI088_ACC_INT1_GPIO_LOW, BMI088_INT1_IO_CTRL_ERROR},
-        {BMI088_INT_MAP_DATA, BMI088_ACC_INT1_DRDY_INTERRUPT, BMI088_INT_MAP_DATA_ERROR}
+        BMI088_INT1_IO_CTRL, BMI088_ACC_INT1_IO_ENABLE | BMI088_ACC_INT1_GPIO_PP | BMI088_ACC_INT1_GPIO_LOW,
+        BMI088_INT1_IO_CTRL_ERROR
+    },
+    {BMI088_INT_MAP_DATA, BMI088_ACC_INT1_DRDY_INTERRUPT, BMI088_INT_MAP_DATA_ERROR}
 
 };
 /**
@@ -137,253 +136,127 @@ static uint8_t write_BMI088_accel_reg_data_error[BMI088_WRITE_ACCEL_REG_NUM][3] 
 * @brief:      	write_BMI088_gyro_reg_data_error_init(void)
 * @param:       void
 * @retval:     	void
-* @details:    	BMI088Õ”¬›“«¥´∏–∆˜ºƒ¥Ê∆˜ ˝æ›–¥»Î¥ÌŒÛ¥¶¿Ì≥ı ºªØ
+* @details:    	BMI088ÈôÄËû∫‰ª™‰º†ÊÑüÂô®ÂØÑÂ≠òÂô®Êï∞ÊçÆÂÜôÂÖ•ÈîôËØØÂ§ÑÁêÜÂàùÂßãÂåñ
 ************************************************************************
 **/
 static uint8_t write_BMI088_gyro_reg_data_error[BMI088_WRITE_GYRO_REG_NUM][3] =
+{
+    {BMI088_GYRO_RANGE, BMI088_GYRO_2000, BMI088_GYRO_RANGE_ERROR},
+    {BMI088_GYRO_BANDWIDTH, BMI088_GYRO_1000_116_HZ | BMI088_GYRO_BANDWIDTH_MUST_Set, BMI088_GYRO_BANDWIDTH_ERROR},
+    {BMI088_GYRO_LPM1, BMI088_GYRO_NORMAL_MODE, BMI088_GYRO_LPM1_ERROR},
+    {BMI088_GYRO_CTRL, BMI088_DRDY_ON, BMI088_GYRO_CTRL_ERROR},
     {
-        {BMI088_GYRO_RANGE, BMI088_GYRO_2000, BMI088_GYRO_RANGE_ERROR},
-        {BMI088_GYRO_BANDWIDTH, BMI088_GYRO_1000_116_HZ | BMI088_GYRO_BANDWIDTH_MUST_Set, BMI088_GYRO_BANDWIDTH_ERROR},
-        {BMI088_GYRO_LPM1, BMI088_GYRO_NORMAL_MODE, BMI088_GYRO_LPM1_ERROR},
-        {BMI088_GYRO_CTRL, BMI088_DRDY_ON, BMI088_GYRO_CTRL_ERROR},
-        {BMI088_GYRO_INT3_INT4_IO_CONF, BMI088_GYRO_INT3_GPIO_PP | BMI088_GYRO_INT3_GPIO_LOW, BMI088_GYRO_INT3_INT4_IO_CONF_ERROR},
-        {BMI088_GYRO_INT3_INT4_IO_MAP, BMI088_GYRO_DRDY_IO_INT3, BMI088_GYRO_INT3_INT4_IO_MAP_ERROR}
+        BMI088_GYRO_INT3_INT4_IO_CONF, BMI088_GYRO_INT3_GPIO_PP | BMI088_GYRO_INT3_GPIO_LOW,
+        BMI088_GYRO_INT3_INT4_IO_CONF_ERROR
+    },
+    {BMI088_GYRO_INT3_INT4_IO_MAP, BMI088_GYRO_DRDY_IO_INT3, BMI088_GYRO_INT3_INT4_IO_MAP_ERROR}
 
 };
-/**
-************************************************************************
-* @brief:      	BMI088_init(void)
-* @param:       void
-* @retval:     	uint8_t - ¥ÌŒÛ¥˙¬Î
-* @details:    	BMI088¥´∏–∆˜≥ı ºªØ∫Ø ˝£¨∞¸¿®GPIO∫ÕSPI≥ı ºªØ£¨“‘º∞º”ÀŸ∂»∫ÕÕ”¬›“«µƒ≥ı ºªØ
-************************************************************************
-**/
-uint8_t BMI088_init(void)
-{
-    uint8_t error = BMI088_NO_ERROR;
-    // GPIO and SPI  Init .
-    BMI088_GPIO_init();
-    BMI088_com_init();
 
+uint8_t BMI088_init(void){
+    uint8_t error = BMI088_NO_ERROR;
+    bmi088 = Bmi088_Register(&bmi088_config);
     error |= bmi088_accel_init();
     error |= bmi088_gyro_init();
 
     return error;
 }
-/**
-************************************************************************
-* @brief:      	bmi088_accel_init(void)
-* @param:       void
-* @retval:     	uint8_t - ¥ÌŒÛ¥˙¬Î
-* @details:    	BMI088º”ÀŸ∂»¥´∏–∆˜≥ı ºªØ∫Ø ˝£¨∞¸¿®Õ®–≈ºÏ≤È°¢»Ìº˛∏¥Œª°¢≈‰÷√ºƒ¥Ê∆˜–¥»Îº∞ºÏ≤È
-************************************************************************
-**/
-uint8_t bmi088_accel_init(void)
-{
-    uint8_t res = 0;
+
+uint8_t bmi088_accel_init(void){
     uint8_t write_reg_num = 0;
+    uint8_t res = 0;
 
-    //check commiunication
-    BMI088_accel_read_single_reg(BMI088_ACC_CHIP_ID, res);
+    res = Accel_Read_Single_Reg(BMI088_ACC_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
-    BMI088_accel_read_single_reg(BMI088_ACC_CHIP_ID, res);
+    res = Accel_Read_Single_Reg(BMI088_ACC_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-    //accel software reset
-    BMI088_accel_write_single_reg(BMI088_ACC_SOFTRESET, BMI088_ACC_SOFTRESET_VALUE);
+    Accel_Write_Single_Reg(BMI088_ACC_SOFTRESET, BMI088_ACC_SOFTRESET_VALUE);
     BMI088_delay_ms(BMI088_LONG_DELAY_TIME);
 
-    //check commiunication is normal after reset
-    BMI088_accel_read_single_reg(BMI088_ACC_CHIP_ID, res);
+    res = Accel_Read_Single_Reg(BMI088_ACC_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
-    BMI088_accel_read_single_reg(BMI088_ACC_CHIP_ID, res);
+    res = Accel_Read_Single_Reg(BMI088_ACC_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-    // check the "who am I"
-    if (res != BMI088_ACC_CHIP_ID_VALUE)
-    {
+    if (res != BMI088_ACC_CHIP_ID_VALUE){
         return BMI088_NO_SENSOR;
     }
 
-    //set accel sonsor config and check
-    for (write_reg_num = 0; write_reg_num < BMI088_WRITE_ACCEL_REG_NUM; write_reg_num++)
-    {
+    for (write_reg_num = 0; write_reg_num < BMI088_WRITE_ACCEL_REG_NUM; write_reg_num++){
 
-        BMI088_accel_write_single_reg(write_BMI088_accel_reg_data_error[write_reg_num][0], write_BMI088_accel_reg_data_error[write_reg_num][1]);
+        Accel_Write_Single_Reg(write_BMI088_accel_reg_data_error[write_reg_num][0],
+                          write_BMI088_accel_reg_data_error[write_reg_num][1]);
         BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-        BMI088_accel_read_single_reg(write_BMI088_accel_reg_data_error[write_reg_num][0], res);
+        res = Accel_Read_Single_Reg(write_BMI088_accel_reg_data_error[write_reg_num][0]);
         BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-        if (res != write_BMI088_accel_reg_data_error[write_reg_num][1])
-        {
+        if (res != write_BMI088_accel_reg_data_error[write_reg_num][1]){
             return write_BMI088_accel_reg_data_error[write_reg_num][2];
         }
     }
     return BMI088_NO_ERROR;
 }
-/**
-************************************************************************
-* @brief:      	bmi088_gyro_init(void)
-* @param:       void
-* @retval:     	uint8_t - ¥ÌŒÛ¥˙¬Î
-* @details:    	BMI088Õ”¬›“«¥´∏–∆˜≥ı ºªØ∫Ø ˝£¨∞¸¿®Õ®–≈ºÏ≤È°¢»Ìº˛∏¥Œª°¢≈‰÷√ºƒ¥Ê∆˜–¥»Îº∞ºÏ≤È
-************************************************************************
-**/
-uint8_t bmi088_gyro_init(void)
-{
+
+uint8_t bmi088_gyro_init(void){
     uint8_t write_reg_num = 0;
     uint8_t res = 0;
 
-    //check commiunication
-    BMI088_gyro_read_single_reg(BMI088_GYRO_CHIP_ID, res);
+    res = Gyro_Read_Single_Reg(BMI088_GYRO_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
-    BMI088_gyro_read_single_reg(BMI088_GYRO_CHIP_ID, res);
+    res = Gyro_Read_Single_Reg(BMI088_GYRO_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-    //reset the gyro sensor
-    BMI088_gyro_write_single_reg(BMI088_GYRO_SOFTRESET, BMI088_GYRO_SOFTRESET_VALUE);
+    Gyro_Write_Single_Reg(BMI088_GYRO_SOFTRESET, BMI088_GYRO_SOFTRESET_VALUE);
     BMI088_delay_ms(BMI088_LONG_DELAY_TIME);
-    //check commiunication is normal after reset
-    BMI088_gyro_read_single_reg(BMI088_GYRO_CHIP_ID, res);
+
+    res = Gyro_Read_Single_Reg(BMI088_GYRO_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
-    BMI088_gyro_read_single_reg(BMI088_GYRO_CHIP_ID, res);
+    res = Gyro_Read_Single_Reg(BMI088_GYRO_CHIP_ID);
     BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-    // check the "who am I"
-    if (res != BMI088_GYRO_CHIP_ID_VALUE)
-    {
+
+    if (res != BMI088_GYRO_CHIP_ID_VALUE){
         return BMI088_NO_SENSOR;
     }
 
-    //set gyro sonsor config and check
-    for (write_reg_num = 0; write_reg_num < BMI088_WRITE_GYRO_REG_NUM; write_reg_num++)
-    {
 
-        BMI088_gyro_write_single_reg(write_BMI088_gyro_reg_data_error[write_reg_num][0], write_BMI088_gyro_reg_data_error[write_reg_num][1]);
+    for (write_reg_num = 0; write_reg_num < BMI088_WRITE_GYRO_REG_NUM; write_reg_num++){
+        Gyro_Write_Single_Reg(write_BMI088_gyro_reg_data_error[write_reg_num][0],
+                                     write_BMI088_gyro_reg_data_error[write_reg_num][1]);
         BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-        BMI088_gyro_read_single_reg(write_BMI088_gyro_reg_data_error[write_reg_num][0], res);
+        res = Gyro_Read_Single_Reg(write_BMI088_gyro_reg_data_error[write_reg_num][0]);
         BMI088_delay_us(BMI088_COM_WAIT_SENSOR_TIME);
 
-        if (res != write_BMI088_gyro_reg_data_error[write_reg_num][1])
-        {
+        if (res != write_BMI088_gyro_reg_data_error[write_reg_num][1]){
             return write_BMI088_gyro_reg_data_error[write_reg_num][2];
         }
     }
 
     return BMI088_NO_ERROR;
 }
+
 /**
-************************************************************************
-* @brief:      	BMI088_read(float gyro[3], float accel[3], float *temperate)
-* @param:       gyro - Õ”¬›“« ˝æ› ˝◊È (x, y, z)
-* @param:       accel - º”ÀŸ∂»º∆ ˝æ› ˝◊È (x, y, z)
-* @param:       temperate - Œ¬∂» ˝æ›÷∏’Î
-* @retval:     	void
-* @details:    	∂¡»°BMI088¥´∏–∆˜ ˝æ›£¨∞¸¿®º”ÀŸ∂»°¢Õ”¬›“«∫ÕŒ¬∂»
-************************************************************************
-**/
-void BMI088_read(float gyro[3], float accel[3], float *temperate)
-{
-    uint8_t buf[8] = {0, 0, 0, 0, 0, 0};
-    int16_t bmi088_raw_temp;
-
-    BMI088_accel_read_muli_reg(BMI088_ACCEL_XOUT_L, buf, 6);
-
-    bmi088_raw_temp = (int16_t)((buf[1]) << 8) | buf[0];
-    accel[0] = bmi088_raw_temp * BMI088_ACCEL_SEN;
-    bmi088_raw_temp = (int16_t)((buf[3]) << 8) | buf[2];
-    accel[1] = bmi088_raw_temp * BMI088_ACCEL_SEN;
-    bmi088_raw_temp = (int16_t)((buf[5]) << 8) | buf[4];
-    accel[2] = bmi088_raw_temp * BMI088_ACCEL_SEN;
-
-    BMI088_gyro_read_muli_reg(BMI088_GYRO_CHIP_ID, buf, 8);
-    if(buf[0] == BMI088_GYRO_CHIP_ID_VALUE)
-    {
-        bmi088_raw_temp = (int16_t)((buf[3]) << 8) | buf[2];
-        gyro[0] = bmi088_raw_temp * BMI088_GYRO_SEN;
-        bmi088_raw_temp = (int16_t)((buf[5]) << 8) | buf[4];
-        gyro[1] = bmi088_raw_temp * BMI088_GYRO_SEN;
-        bmi088_raw_temp = (int16_t)((buf[7]) << 8) | buf[6];
-        gyro[2] = bmi088_raw_temp * BMI088_GYRO_SEN;
+ * @brief ËØªÂèñBMI088 ÈôÄËû∫‰ª™ÔºåÂä†ÈÄüÂ∫¶ËÆ°ÔºåÊ∏©Â∫¶ÁöÑÂÄº
+ * @param gyro ÈôÄËû∫‰ª™ÁöÑÂÄº
+ * @param accel Âä†ÈÄüÂ∫¶ËÆ°ÁöÑÂÄº
+ * @param temperate Ê∏©Â∫¶
+ */
+void Bmi088_read(float gyro[3], float accel[3], float* temperate){
+    uint8_t accel_buf[8] = {0};
+    uint8_t gyro_buf[9] = {0};
+    Accel_Read(BMI088_ACCEL_XOUT_L, accel_buf,6);
+    for (uint8_t i = 0; i < 3; i++){
+        accel[i] = BMI088_ACCEL_SEN * (float)(int16_t)(accel_buf[i * 2 + 3] << 8 | accel_buf[i * 2 + 2]);
     }
-    BMI088_accel_read_muli_reg(BMI088_TEMP_M, buf, 2);
-
-    bmi088_raw_temp = (int16_t)((buf[0] << 3) | (buf[1] >> 5));
-
-    if (bmi088_raw_temp > 1023)
-    {
-        bmi088_raw_temp -= 2048;
+    Gyro_Read(BMI088_GYRO_CHIP_ID, gyro_buf);
+    if (gyro_buf[1] == BMI088_GYRO_CHIP_ID_VALUE){
+        for (uint8_t i = 0; i < 3; i++){
+            gyro[i] = BMI088_GYRO_SEN * (float)(int16_t)(gyro_buf[i * 2 + 4] << 8 | gyro_buf[i * 2 + 3]);
+        }
     }
-
-    *temperate = bmi088_raw_temp * BMI088_TEMP_FACTOR + BMI088_TEMP_OFFSET;
+ Accel_Read(BMI088_TEMP_M, accel_buf,2);
+ *temperate = (float)(int16_t)((accel_buf[2] << 3) | (accel_buf[3] >> 5)) * BMI088_TEMP_FACTOR + BMI088_TEMP_OFFSET;
 }
-
-#if defined(BMI088_USE_SPI)
-/**
-************************************************************************
-* @brief:      	BMI088_write_single_reg(uint8_t reg, uint8_t data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-* @param:       data - –¥»Îµƒ ˝æ›
-* @retval:     	void
-* @details:    	œÚBMI088¥´∏–∆˜–¥»Îµ•∏ˆºƒ¥Ê∆˜µƒ ˝æ›
-************************************************************************
-**/
-static void BMI088_write_single_reg(uint8_t reg, uint8_t data)
-{
-    BMI088_read_write_byte(reg);
-    BMI088_read_write_byte(data);
-}
-/**
-************************************************************************
-* @brief:      	BMI088_read_single_reg(uint8_t reg, uint8_t *return_data)
-* @param:       reg - ºƒ¥Ê∆˜µÿ÷∑
-* @param:       return_data - ∂¡»°µƒºƒ¥Ê∆˜ ˝æ›
-* @retval:     	void
-* @details:    	¥”BMI088¥´∏–∆˜∂¡»°µ•∏ˆºƒ¥Ê∆˜µƒ ˝æ›
-************************************************************************
-**/
-static void BMI088_read_single_reg(uint8_t reg, uint8_t *return_data)
-{
-    BMI088_read_write_byte(reg | 0x80);
-    *return_data = BMI088_read_write_byte(0x55);
-}
-
-//static void BMI088_write_muli_reg(uint8_t reg, uint8_t* buf, uint8_t len )
-//{
-//    BMI088_read_write_byte( reg );
-//    while( len != 0 )
-//    {
-
-//        BMI088_read_write_byte( *buf );
-//        buf ++;
-//        len --;
-//    }
-
-//}
-/**
-************************************************************************
-* @brief:      	BMI088_read_muli_reg(uint8_t reg, uint8_t *buf, uint8_t len)
-* @param:       reg - ∆ ººƒ¥Ê∆˜µÿ÷∑
-*               buf - ¥Ê¥¢∂¡»° ˝æ›µƒª∫≥Â«¯
-*               len - “™∂¡»°µƒ◊÷Ω⁄ ˝
-* @retval:     	void
-* @details:    	¥”BMI088¥´∏–∆˜¡¨–¯∂¡»°∂‡∏ˆºƒ¥Ê∆˜µƒ ˝æ›
-************************************************************************
-**/
-static void BMI088_read_muli_reg(uint8_t reg, uint8_t *buf, uint8_t len)
-{
-    BMI088_read_write_byte(reg | 0x80);
-
-    while (len != 0)
-    {
-
-        *buf = BMI088_read_write_byte(0x55);
-        buf++;
-        len--;
-    }
-}
-#elif defined(BMI088_USE_IIC)
-
-#endif
