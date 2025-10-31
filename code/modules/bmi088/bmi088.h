@@ -1,11 +1,26 @@
 #ifndef BMI088_H
 #define BMI088_H
-#include "spi.h"
-#include "bsp_spi.h"
-#define BMI088_USING_SPI_UNIT hspi2
+
+#include "stdint.h"
+#include  "bsp_spi.h"
+
+
 
 typedef struct{
-    SpiInstance_s *accel_instance;
-    SpiInstance_s *gyro_instance;
+
+    SpiInstance_s *accel;
+    SpiInstance_s *gyro;
 }Bmi088Instance_s;
-#endif //BMI088_H
+typedef struct{
+    SpiInitConfig_s accel;
+    SpiInitConfig_s gyro;
+}Bmi088InitConfig_s;
+
+
+ uint8_t BMI088_init(void);
+
+ void Bmi088_read(float gyro[3], float accel[3], float *temperate);
+
+
+
+#endif

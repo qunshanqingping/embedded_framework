@@ -32,11 +32,18 @@ typedef struct SpiInstance_s{
 typedef struct{
     char* topic_name;
     TransferMode_e mode;
-    SPI_HandleTypeDef* spi_handle;
+    uint8_t spi_handle_number;
     GPIO_TypeDef* cs_port;
     uint16_t cs_pin;
     uint16_t timeout;
 }SpiInitConfig_s;
+
+/**
+ * @brief 选择spi端口指针
+ * @param spi_handle_number spi端口号
+ * @return 对应端口的指针
+ */
+SPI_HandleTypeDef* Spi_handle_Select(uint8_t spi_handle_number);
 /**
  * @file bsp_spi.c
  * @brief SPI 实例注册函数
