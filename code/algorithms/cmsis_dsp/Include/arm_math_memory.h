@@ -32,11 +32,11 @@
 /* Size are in bytes */
 #if !defined(ARM_MATH_L1_CACHE_SIZE)
 #define ARM_MATH_L1_CACHE_SIZE (16*1024)
-#endif
+#endif 
 
 #if !defined(ARM_MATH_L2_CACHE_SIZE)
 #define ARM_MATH_L2_CACHE_SIZE (128*1024)
-#endif
+#endif 
 
 #if !defined(ARM_MATH_L3_CACHE_SIZE)
 #define ARM_MATH_L3_CACHE_SIZE (512*1024)
@@ -176,7 +176,7 @@ __STATIC_FORCEINLINE q31_t read_q7x4 (
   memcpy (&val, pQ7, 4);
 #else
   val =((pQ7[3] & 0x0FF) << 24)  | ((pQ7[2] & 0x0FF) << 16)  | ((pQ7[1] & 0x0FF) << 8)  | (pQ7[0] & 0x0FF);
-#endif
+#endif 
   return (val);
 }
 

@@ -27,7 +27,7 @@
  *
  * Target Processor: Cortex-M and Cortex-A cores
  * -------------------------------------------------------------------- */
-
+#include "arm_compiler_specific.h"
 
 
 #include "dsp/basic_math_functions.h"

@@ -7,6 +7,8 @@
 #define BARE_METAL    // 裸机模式
 // #define FREERTOS      // FreeRTOS模式
 
+#define DEBUG_MODE 1
+#define IMU_HEAT 0
 /* 底盘配置 */
 #define MECANUM // 麦克纳姆轮底盘
 // #define OMNI    // 全向轮底盘
@@ -40,6 +42,9 @@
 // #define USER_CAN_FILTER_LIST_MODE
 
 
+#define USER_SPI2
+
+#define SPI_IMU_HANDLE 2
 /* 配置检查 */
 
 /* 开发配置 */

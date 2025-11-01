@@ -2,18 +2,18 @@
 // Date			Author			Notes
 // 29/09/2011	SOH Madgwick    Initial release
 // 02/10/2011	SOH Madgwick	Optimised for reduced CPU load
-//¶ßÀ²aÃÎ 2023/3/27 Ä§¸Ä
+//å“†å•¦aæ¢¦ 2023/3/27 é­”æ”¹
 //-------------------------------------------------------------------------------------------
 // Header files
 
 #include "MahonyAHRS.h"
 
-
-#include "dsp/fast_math_functions.h"    
 #include "arm_math.h"
+#include "dsp/fast_math_functions.h"
+
 //-------------------------------------------------------------------------------------------
 // Definitions
-//ÕâÀï¶¼ÊÇ¿ÉÒÔµ÷ÕûµÄ²ÎÊı
+//è¿™é‡Œéƒ½æ˜¯å¯ä»¥è°ƒæ•´çš„å‚æ•°
 //---------------------------------------***********************************
 float twoKi;		// 2 * integral gain (Ki)
 float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
@@ -24,9 +24,9 @@ char anglesComputed;
 //*-*-*-**-----------------------------------------------------------------------------
 static float invSqrt(float x)  // if use other platform please use float Mahony_invSqrt(float x)
 {
-	volatile float tmp = 1.0f;
-	tmp /= __sqrtf(x);
-	return tmp;
+	float32_t sqrt_result;
+	arm_sqrt_f32(x, &sqrt_result);
+	return 1.0f / sqrt_result;
 }
 
 
