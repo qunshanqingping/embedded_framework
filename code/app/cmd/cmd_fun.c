@@ -2,8 +2,9 @@
 #include "fs_i6x.h"
 #include "basic_math.h"
 #include "cmsis_os.h"
-#include "BMI088driver.h"
+#include "bmi088.h"
 #include "bsp_dwt.h"
+#include "plf_log.h"
 RcCmd_s rc_cmd;
 I6xInstance_s* i6x;
 float accel_data[3];
@@ -12,9 +13,10 @@ float temperature;
 extern Bmi088Instance_s *bmi088_Instance;
 void USER_CMD_Init(void)
 {
+    Log_Init();
     Dwt_Init();
     BMI088_init();
-    i6x = I6x_Register(&huart5);
+    // i6x = I6x_Register(&huart5);
 }
 
 void Cmd_Read(void){
@@ -42,8 +44,8 @@ void Cmd_Read(void){
     /* Infinite loop */
     for(;;)
     {
-        Bmi088_read(accel_data, gyro_data, &temperature);
-        Cmd_Read();
+        Bmi088_read(gyro_data, accel_data, &temperature);
+        // Cmd_Read();
         osDelay(1);
     }
     /* USER CODE END cmd_task */
