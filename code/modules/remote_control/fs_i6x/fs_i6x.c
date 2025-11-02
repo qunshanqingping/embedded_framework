@@ -8,9 +8,10 @@
 #include "watch_dog.h"
 #include <string.h>
 /* 接收缓冲区 */
-__attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_first_buff[SBUS_FRAME_SIZE];
-__attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_second_buff[SBUS_FRAME_SIZE];
-
+// __attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_first_buff[SBUS_FRAME_SIZE];
+// __attribute((section(".axid1"), aligned(32))) uint8_t sbus_rx_second_buff[SBUS_FRAME_SIZE];
+__attribute__((section(".ram_d1"), aligned(32))) uint8_t sbus_rx_first_buff[SBUS_FRAME_SIZE];
+__attribute__((section(".ram_d1"), aligned(32))) uint8_t sbus_rx_second_buff[SBUS_FRAME_SIZE];
 /**
  * @brief 解析两位开关
  * @param ch 通道值
