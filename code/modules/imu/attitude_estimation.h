@@ -4,5 +4,6 @@
 
 #ifndef ESTIMATION_H
 #define ESTIMATION_H
+#include "arm_math.h"
 
 #endif //ESTIMATION_H
